@@ -1,0 +1,42 @@
+<template>
+  <div
+      class="
+      py-4 px-4 flex items-center space-x-3 h-20
+      bg-white dark:bg-gray-800
+      border-t border-gray-200 dark:border-gray-700
+      hover:bg-gray-50 dark:hover:bg-gray-800
+      transition-colors duration-150
+    "
+  >
+    <img
+        :src="avatarUrl"
+        alt="Avatar"
+        class="
+        w-10 h-10 rounded-full object-cover
+        bg-gray-200 dark:bg-gray-700
+      "
+    />
+    <div class="flex flex-col">
+      <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+        {{ fullName }}
+      </span>
+      <span class="text-xs text-gray-500 dark:text-gray-400">
+        {{ email || 'user@example.com' }}
+      </span>
+    </div>
+    <!-- Компактный переключатель темы -->
+    <ThemeSwitcher class="w-10 h-5" />
+  </div>
+</template>
+
+<script setup>
+import { storeToRefs } from 'pinia'
+import { useUserStore } from '@/store/user'
+import ThemeSwitcher from '@/components/Sidebar/ThemeSwitcher.vue'
+
+const userStore = useUserStore()
+const { avatarUrl, fullName, email } = storeToRefs(userStore)
+</script>
+
+<style scoped>
+</style>
