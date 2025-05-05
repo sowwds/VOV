@@ -23,7 +23,7 @@ import {
   HomeIcon,
   HeartIcon,
 } from '@heroicons/vue/24/outline'
-import WrenchScrewdriverIcon from '@/components/Icons/WrenchScrewdriverIcon.vue'
+import WrenchScrewdriverIcon from '@/components/icons/WrenchScrewdriverIcon.vue'
 
 const menuItems = [
   { to: '/',           label: 'Главная',     icon: HomeIcon },
