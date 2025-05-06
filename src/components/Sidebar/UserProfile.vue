@@ -25,7 +25,22 @@
       </span>
     </div>
     <!-- Компактный переключатель темы -->
-    <ThemeSwitcher class="w-10 h-5" />
+    <div class="flex flex-col items-end space-y-2">
+      <!-- Компактный переключатель темы -->
+      <ThemeSwitcher class="w-10 h-5" />
+
+      <!-- Кнопка настроек с иконкой шестеренки -->
+      <router-link to="/profile-settings">
+        <button
+            class="p-1 bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+            aria-label="Настройки профиля"
+        >
+          <CogIcon class="w-5 h-5 text-gray-700 dark:text-gray-200" />
+        </button>
+      </router-link>
+    </div>
+
+
   </div>
 </template>
 
@@ -33,6 +48,8 @@
 import { storeToRefs } from 'pinia'
 import { useUserStore } from '@/store/user'
 import ThemeSwitcher from '@/components/Sidebar/ThemeSwitcher.vue'
+
+import { CogIcon } from '@heroicons/vue/24/outline'
 
 const userStore = useUserStore()
 const { avatarUrl, fullName, email } = storeToRefs(userStore)
