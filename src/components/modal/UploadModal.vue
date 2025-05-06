@@ -107,7 +107,7 @@ const uploadFiles = async () => {
 
         <!-- Область drag-and-drop -->
         <div
-          class="m-6 p-6 border-2 border-dashed rounded-lg text-center"
+          class="m-6 p-6 border-2 border-blue-500 rounded-lg text-center"
           :class="isDragging ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-500'"
           @dragover="onDragOver"
           @dragleave="onDragLeave"
