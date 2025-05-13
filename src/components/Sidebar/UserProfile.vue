@@ -2,7 +2,6 @@
     <div
         class="
         py-4 px-4 flex items-center space-x-3 h-20
-        bg-white dark:bg-gray-800
         border-t border-gray-200 dark:border-gray-700
         hover:bg-gray-50 dark:hover:bg-gray-800
         transition-colors duration-150
@@ -46,7 +45,7 @@
   import { storeToRefs } from 'pinia';
   import { useAuthStore } from '@/store/auth';
   import { onMounted } from 'vue';
-  import ThemeSwitcher from '@/components/Sidebar/ThemeSwitcher.vue';
+  import ThemeSwitcher from '@/components/Header/ThemeSwitcher.vue';
   import { CogIcon } from '@heroicons/vue/24/outline';
 
   const authStore = useAuthStore();

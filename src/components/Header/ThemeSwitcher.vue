@@ -24,7 +24,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useThemeStore } from '@/store/theme'
+import { useThemeStore } from '@/store/theme.js'
 
 // Prop for custom size classes (width and height)
 const props = defineProps({

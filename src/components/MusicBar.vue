@@ -62,19 +62,19 @@
   <!-- Standard music bar mode -->
   <div
       v-else
-      class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4 px-4 flex items-center justify-between h-20"
+      class="bg-light-surface dark:bg-dark-surface border-t border-gray-200 dark:border-dark-border py-4 px-4 flex items-center justify-between h-20"
   >
     <!-- Left section -->
     <div class="flex items-center space-x-3">
       <img :src="coverUrl" alt="Cover" class="w-12 h-12 object-cover rounded bg-gray-100 dark:bg-gray-700">
       <div class="flex flex-col">
-        <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ trackTitle }}</p>
-        <p class="text-xs text-gray-500 dark:text-gray-400">{{ artistName }}</p>
+        <p class="text-sm font-semibold text-light-text dark:text-dark-text">{{ trackTitle }}</p>
+        <p class="text-xs text-light-text-muted dark:text-dark-text-muted">{{ artistName }}</p>
       </div>
-      <button @click="toggleLike" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-        <component :is="isLiked ? HeartSolid : HeartOutline" class="w-5 h-5" />
+      <button @click="toggleLike" class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200">
+        <component :is="isLiked ? HeartSolid : HeartOutline" class="w-5 h-5 " />
       </button>
-      <button @click="toggleFloatMode" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+      <button @click="toggleFloatMode" class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200">
         <ArrowsPointingOutIcon class="w-5 h-5" />
       </button>
     </div>
@@ -82,13 +82,13 @@
     <!-- Center section -->
     <div class="flex flex-col items-center space-y-1 flex-1 px-4">
       <div class="flex items-center space-x-4">
-        <button @click="prevTrack" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+        <button @click="prevTrack" class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200">
           <ChevronLeftIcon class="w-5 h-5" />
         </button>
-        <button @click="togglePlay" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600">
-          <component :is="isPlaying ? PauseIcon : PlayIcon" class="w-5 h-5" />
+        <button @click="togglePlay" class="p-2 rounded-full bg-light-primary dark:bg-dark-primary text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200" >
+          <component :is="isPlaying ? PauseIcon : PlayIcon" class="w-5 h-5 fill-current play-icon-offset" />
         </button>
-        <button @click="nextTrack" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+        <button @click="nextTrack" class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200">
           <ChevronRightIcon class="w-5 h-5" />
         </button>
       </div>
@@ -102,7 +102,7 @@
     <!-- Right section -->
     <div class="flex items-center space-x-3">
       <input type="range" min="0" max="100" v-model="volume" class="w-20">
-      <button @click="openInfo" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+      <button @click="openInfo" class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200">
         <InformationCircleIcon class="w-5 h-5" />
       </button>
     </div>
@@ -210,7 +210,7 @@ function formatTime(sec) {
 </script>
 
 <style scoped>
-/* Draggable window header */
+/* Draggable window Header */
 .cursor-move {
   cursor: move;
   user-select: none;
@@ -222,5 +222,10 @@ input[type="range"] {
 }
 input[type="range"]::-webkit-slider-thumb {
   @apply appearance-none w-[3] h-[3] rounded-full  cursor-pointer;
+}
+
+.play-icon-offset {
+  position: relative;
+  left: 1px;
 }
 </style>

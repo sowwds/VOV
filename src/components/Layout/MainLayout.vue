@@ -1,5 +1,7 @@
 <template>
-  <div class="flex h-screen overflow-hidden">
+  <div class="flex h-screen overflow-hidden flex-col">
+
+    <Header @toggleDrawer="toggleDrawer" :drawerOpen="drawerOpen" />
     <!-- Mobile overlay -->
     <transition name="fade">
       <div
@@ -57,20 +59,7 @@
         </div>
       </div>
 
-      <!-- Mobile burger button -->
-      <button
-          @click="toggleDrawer"
-          aria-label="Toggle sidebar"
-          class="md:hidden fixed top-1/2 left-6 -translate-y-1/2 z-10 p-3 rounded-full bg-indigo-500 shadow-lg shadow-indigo-500/30 overflow-hidden"
-      >
-        <div class="relative w-10 h-10 rounded-full">
-          <!-- Animated ripple effect -->
-          <div class="absolute inset-0 bg-indigo-500 rounded-full animate-ripple" />
-          <svg class="w-6 h-6 text-white z-10 relative" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </div>
-      </button>
+
 
       <!-- Sidebar -->
       <transition name="slide">
@@ -85,12 +74,14 @@
 
       <!-- Page content with larger padding -->
       <main
-          class="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 px-8 md:px-12 lg:px-16 py-8 transition-all duration-500"
+          class="pt-16 flex-1 overflow-auto bg-light-bg dark:bg-dark-bg
+          px-8 md:px-12 lg:px-16 pb-6 transition-all duration-500"
           :class="{ 'md:pl-16': drawerOpen }"
           @click="closeSidebarOnMobile"
       >
         <router-view />
       </main>
+
 
       <!-- Music player -->
       <footer class="flex-shrink-0">
@@ -104,6 +95,7 @@
 import { ref } from 'vue'
 import Sidebar from '@/components/Sidebar/Sidebar.vue'
 import MusicBar from '@/components/MusicBar.vue'
+import Header from "@/components/header/Header.vue";
 
 const drawerOpen = ref(false)
 

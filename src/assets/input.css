@@ -1,3 +1,30 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+
+@theme {
+    /* Светлая тема */
+    --color-light-bg: #fafafc;
+    --color-light-surface: #ffffff;
+    --color-light-primary: #6366f1;  /* Индиго */
+    --color-light-secondary: #ec4899;  /* Розовый */
+    --color-light-text: #1f2937;  /* Темно-серый */
+    --color-light-text-muted: #6b7280;  /* Серый */
+    --color-light-border: #e5e7eb;  /* Светло-серый */
+
+    /* Темная тема */
+    --color-dark-bg: #17181c;
+    --color-dark-surface: #26272c;
+    --color-dark-primary: #8b5cf6;  /* Фиолетовый */
+    --color-dark-secondary: #14b8a6;  /* Бирюзовый */
+    --color-dark-text: #f3f4f6;  /* Почти белый */
+    --color-dark-text-muted: #9ca3af;  /* Светло-серый */
+    --color-dark-border: #374151;  /* Темно-серый */
+
+    /* Плеер (отдельное окно) */
+    --color-player-bg: #ffffff;
+    --color-player-bg-dark: #1e1f24;
+    --color-progress: #6366f1;
+    --color-progress-dark: #8b5cf6;
+}

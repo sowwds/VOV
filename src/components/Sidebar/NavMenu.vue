@@ -1,11 +1,10 @@
 <template>
-  <nav class="px-4 bg-white dark:bg-gray-800 transition-colors duration-150">
+  <nav class="px-4">
     <ul class="space-y-2">
       <li v-for="item in menuItems" :key="item.to" class="relative group">
         <router-link
             :to="item.to"
             class="block w-full flex items-center p-2 rounded
-                 bg-white dark:bg-gray-800
                  text-gray-700 dark:text-gray-200
                  hover:text-indigo-500
                  dark:hover:text-white"

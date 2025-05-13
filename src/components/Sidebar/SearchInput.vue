@@ -5,7 +5,6 @@
           type="text"
           placeholder="Поиск"
           class="w-full pl-3 pr-10 py-2 rounded
-               bg-white dark:bg-gray-800
                text-gray-900 dark:text-gray-100
                border border-gray-300 dark:border-gray-700
                placeholder-gray-500 dark:placeholder-gray-400
