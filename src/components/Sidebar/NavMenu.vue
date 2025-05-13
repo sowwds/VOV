@@ -24,13 +24,17 @@
 import {
   HomeIcon,
   HeartIcon,
+  BuildingLibraryIcon,
+  MapIcon,
 } from '@heroicons/vue/24/outline'
 import WrenchScrewdriverIcon from '@/components/icons/WrenchScrewdriverIcon.vue'
 
 const menuItems = [
   { to: '/',           label: 'Главная',     icon: HomeIcon },
-  { to: '/restorator', label: 'Реставратор', icon: WrenchScrewdriverIcon },
+  { to: '/restoration', label: 'Реставратор', icon: WrenchScrewdriverIcon },
+  { to: '/library', label: 'Библиотека', icon: BuildingLibraryIcon },
   { to: '/collection', label: 'Коллекция',   icon: HeartIcon },
+  { to: '/map', label: 'Карта', icon: MapIcon },
 ]
 </script>
 
