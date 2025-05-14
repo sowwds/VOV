@@ -2,12 +2,14 @@
 import StepIndicator from '@/components/StepIndicator.vue';
 import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useRestorationStore } from '@/store/restoration';
 
 const router = useRouter();
 
+const restorationStore = useRestorationStore();
 onMounted(() => {
   setTimeout(() => {
-    router.push('/restoration/step4');
+    restorationStore.setCurrentStep(4);
   }, 5000); // Имитация 5-секундной обработки
 });
 </script>
@@ -19,7 +21,6 @@ onMounted(() => {
       <p class="text-lg text-light-text dark:text-dark-text mb-4">Пожалуйста, подождите, пока мы обрабатываем ваше аудио...</p>
       <div class="spinner mx-auto"></div>
     </div>
-    <StepIndicator />
   </div>
 </template>
 

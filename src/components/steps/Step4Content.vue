@@ -47,7 +47,7 @@ const onCoverSelect = (event) => {
 
 // Переход на следующий шаг
 const goToStep5 = () => {
-  router.push('/restoration/step5');
+    restorationStore.setCurrentStep(5);
 };
 </script>
 
@@ -128,6 +128,5 @@ const goToStep5 = () => {
         Продолжить
       </button>
     </div>
-    <StepIndicator />
   </div>
 </template>

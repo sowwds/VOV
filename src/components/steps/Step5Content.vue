@@ -26,7 +26,6 @@ const addToCollection = () => {
 
 <template>
   <div class=" relative h-full flex flex-col items-center justify-center p-4">
-    <StepIndicator />
     <h1 class="text-3xl font-bold text-light-text dark:text-dark-text mb-6">Реставрация завершена</h1>
     <div class="bg-light-surface dark:bg-dark-surface p-6 rounded-lg shadow-lg w-full max-w-md text-left">
         <div class="flex flex-wrap justify-around mb-4">

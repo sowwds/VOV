@@ -47,7 +47,7 @@ const uploadFiles = async () => {
     try {
       console.log('Uploading files:', restorationStore.files);
       // В будущем заменить на fetch
-      router.push('/restoration/step3');
+      restorationStore.setCurrentStep(3);
     } catch (err) {
       console.error('Upload failed:', err);
     }
@@ -90,7 +90,5 @@ const uploadFiles = async () => {
         Загрузить
       </button>
     </div>
-
-  <StepIndicator />
   </div>
 </template>
