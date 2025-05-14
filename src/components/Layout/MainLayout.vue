@@ -95,7 +95,7 @@
 import { ref } from 'vue'
 import Sidebar from '@/components/Sidebar/Sidebar.vue'
 import MusicBar from '@/components/MusicBar.vue'
-import Header from "@/components/header/Header.vue";
+import Header from "@/components/Header/Header.vue";
 
 const drawerOpen = ref(false)
 
