@@ -5,6 +5,7 @@ import App from './App.vue'
 import '@/assets/input.css'   // подключение Tailwind
 import { useThemeStore, applyTheme } from '@/store/theme'
 
+
 const app = createApp(App)
 const pinia = createPinia()
 

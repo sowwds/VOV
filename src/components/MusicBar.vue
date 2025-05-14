@@ -1,231 +1,361 @@
 <template>
-  <!-- Floating window mode -->
   <div
-      v-if="isFloating"
-      ref="floatingWindow"
-      class="fixed bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl overflow-hidden z-50"
-      :style="windowStyle"
-      @mousedown="startDrag"
+      class="bg-light-surface dark:bg-dark-surface border-t border-gray-200 dark:border-dark-border py-4 px-6 flex items-center justify-between h-20"
   >
-    <div class="flex items-center justify-between p-2 bg-gray-100 dark:bg-gray-700 cursor-move">
-      <div class="flex items-center space-x-2">
-        <img :src="coverUrl" alt="Cover" class="w-6 h-6 object-cover rounded">
-        <span class="text-sm font-medium">{{ trackTitle }}</span>
-      </div>
-      <div class="flex items-center space-x-2">
-        <button @click="toggleFloatMode" class="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded">
-          <ArrowDownIcon class="w-4 h-4" />
-        </button>
-        <button @click="toggleWindowSize" class="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded">
-          <component :is="isExpanded ? MinusIcon : PlusIcon" class="w-4 h-4" />
-        </button>
-        <button @click="closeWindow" class="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded">
-          <XMarkIcon class="w-4 h-4" />
-        </button>
-      </div>
-    </div>
-
-    <div class="p-3" :class="{'hidden': !isExpanded}">
-      <!-- Compact player content -->
-      <div class="flex flex-col space-y-3">
-        <div class="flex items-center justify-between">
-          <div class="flex flex-col">
-            <p class="text-sm font-semibold">{{ trackTitle }}</p>
-            <p class="text-xs text-gray-500">{{ artistName }}</p>
-          </div>
-          <button @click="toggleLike" class="p-1">
-            <component :is="isLiked ? HeartSolid : HeartOutline" class="w-5 h-5" />
-          </button>
-        </div>
-
-        <div class="flex items-center justify-center space-x-4">
-          <button @click="prevTrack" class="p-1">
-            <ChevronLeftIcon class="w-5 h-5" />
-          </button>
-          <button @click="togglePlay" class="p-1 bg-gray-200 dark:bg-gray-700 rounded-full">
-            <component :is="isPlaying ? PauseIcon : PlayIcon" class="w-5 h-5" />
-          </button>
-          <button @click="nextTrack" class="p-1">
-            <ChevronRightIcon class="w-5 h-5" />
-          </button>
-        </div>
-
-        <div class="flex items-center space-x-2">
-          <span class="text-xs">{{ formatTime(currentTime) }}</span>
-          <input type="range" min="0" :max="duration" v-model="currentTime" class="flex-1">
-          <span class="text-xs">{{ formatTime(duration) }}</span>
-        </div>
+    <!-- ЛЕВАЯ СЕКЦИЯ: обложка + название + автор -->
+    <div class="flex items-center space-x-3 w-1/4 min-w-[200px]">
+      <img
+          :src="coverUrl"
+          alt="Cover"
+          class="w-12 h-12 object-cover rounded bg-gray-100 dark:bg-gray-700"
+      />
+      <div class="flex flex-col truncate">
+        <p class="text-sm font-semibold text-light-text dark:text-dark-text truncate">
+          {{ trackTitle }}
+        </p>
+        <p class="text-xs text-light-text-muted dark:text-dark-text-muted truncate">
+          {{ artistName }}
+        </p>
       </div>
     </div>
-  </div>
 
-  <!-- Standard music bar mode -->
-  <div
-      v-else
-      class="bg-light-surface dark:bg-dark-surface border-t border-gray-200 dark:border-dark-border py-4 px-4 flex items-center justify-between h-20"
-  >
-    <!-- Left section -->
-    <div class="flex items-center space-x-3">
-      <img :src="coverUrl" alt="Cover" class="w-12 h-12 object-cover rounded bg-gray-100 dark:bg-gray-700">
-      <div class="flex flex-col">
-        <p class="text-sm font-semibold text-light-text dark:text-dark-text">{{ trackTitle }}</p>
-        <p class="text-xs text-light-text-muted dark:text-dark-text-muted">{{ artistName }}</p>
-      </div>
-      <button @click="toggleLike" class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200">
-        <component :is="isLiked ? HeartSolid : HeartOutline" class="w-5 h-5 " />
-      </button>
-      <button @click="toggleFloatMode" class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200">
-        <ArrowsPointingOutIcon class="w-5 h-5" />
-      </button>
-    </div>
-
-    <!-- Center section -->
-    <div class="flex flex-col items-center space-y-1 flex-1 px-4">
+    <!-- ЦЕНТРАЛЬНАЯ СЕКЦИЯ: управление воспроизведением + прогресс -->
+    <div class="flex flex-col items-center flex-1">
       <div class="flex items-center space-x-4">
-        <button @click="prevTrack" class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200">
-          <ChevronLeftIcon class="w-5 h-5" />
+        <!-- Shuffle -->
+        <button
+            @click="toggleShuffle"
+            :class="shuffleActive ? 'text-light-primary dark:text-dark-primary' : 'text-light-text dark:text-dark-text'"
+            class="p-2 rounded hover:scale-110 active:scale-95 transition-transform duration-200"
+        >
+          <ArrowsRightLeftIcon class="w-6 h-6" />
         </button>
-        <button @click="togglePlay" class="p-2 rounded-full bg-light-primary dark:bg-dark-primary text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200" >
-          <component :is="isPlaying ? PauseIcon : PlayIcon" class="w-5 h-5 fill-current play-icon-offset" />
+
+        <!-- Назад -->
+        <button
+            @click="prevTrack"
+            class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200"
+        >
+          <ChevronLeftIcon class="w-6 h-6" />
         </button>
-        <button @click="nextTrack" class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200">
-          <ChevronRightIcon class="w-5 h-5" />
+
+        <!-- Play / Pause -->
+        <button
+            @click="togglePlay"
+            class="p-2 rounded-full bg-light-primary dark:bg-dark-primary text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200"
+        >
+          <component :is="isPlaying ? PauseIcon : PlayIcon" class="w-6 h-6" />
         </button>
+
+        <!-- Вперёд -->
+        <button
+            @click="nextTrack"
+            class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200"
+        >
+          <ChevronRightIcon class="w-6 h-6" />
+        </button>
+
+        <!-- Loop: трек -->
+        <button
+            @click="cycleLoopMode"
+            :class="loopClass"
+            class="p-2 rounded hover:scale-110 active:scale-95 transition-transform duration-200"
+        >
+          <!-- контейнер размером под иконку -->
+          <div class="relative w-6 h-6">
+            <!-- сама иконка -->
+            <ArrowPathRoundedSquareIcon class="w-full h-full" />
+
+            <!-- бейдж «1» строго в углу -->
+            <span
+                v-if="loopMode === 'one'"
+                class="absolute bottom-0 right-0 bg-light-primary dark:bg-dark-primary
+               text-white text-[10px] font-bold rounded-full w-3 h-3
+               flex items-center justify-center"
+            >1</span>
+          </div>
+        </button>
+
       </div>
-      <div class="flex items-center space-x-2 w-full">
-        <span class="text-xs">{{ formatTime(currentTime) }}</span>
-        <input type="range" min="0" :max="duration" v-model="currentTime" class="w-full">
-        <span class="text-xs">{{ formatTime(duration) }}</span>
+
+      <!-- Прогресс-бар -->
+      <div class="flex items-center space-x-2 w-full max-w-2xl mt-2">
+        <span class="text-xs text-light-text dark:text-dark-text">{{ formatTime(currentTime) }}</span>
+        <input
+            type="range"
+            min="0"
+            :max="duration"
+            v-model.number="currentTime"
+            @input="seek"
+            class="flex-1"
+        />
+        <span class="text-xs text-light-text dark:text-dark-text">{{ formatTime(duration) }}</span>
       </div>
     </div>
 
-    <!-- Right section -->
-    <div class="flex items-center space-x-3">
-      <input type="range" min="0" max="100" v-model="volume" class="w-20">
-      <button @click="openInfo" class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200">
-        <InformationCircleIcon class="w-5 h-5" />
+    <!-- ПРАВАЯ СЕКЦИЯ: доп. функции + громкость -->
+    <div class="flex items-center space-x-4 w-1/4 justify-end min-w-[200px]">
+      <!-- Speech to text -->
+      <button
+          @click="onSpeechToText"
+          class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200"
+      >
+        <MicrophoneIcon class="w-5 h-5" />
+      </button>
+
+      <!-- Переключатель версии -->
+      <button
+          @click="toggleVersion"
+          class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200"
+      >
+        <ArrowsUpDownIcon class="w-5 h-5" />
+      </button>
+
+      <!-- Лайк -->
+      <button
+          @click="toggleLike"
+          class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200"
+      >
+        <component :is="isLiked ? HeartSolid : HeartOutline" class="w-5 h-5" />
+      </button>
+
+      <!-- Mute -->
+      <button
+          @click="toggleMute"
+          class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200"
+      >
+        <component :is="isMuted ? SpeakerXMarkIcon : SpeakerWaveIcon" class="w-5 h-5" />
+      </button>
+
+      <!-- Громкость -->
+      <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          v-model.number="volume"
+          @input="updateVolume"
+          class="w-20"
+      />
+
+      <!-- Оконный режим -->
+      <button
+          @click="toggleFloatMode"
+          class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200"
+      >
+        <ArrowsPointingOutIcon class="w-5 h-5" />
       </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, watch, computed } from 'vue';
+import { usePlayerStore } from '@/store/player';
 import {
   HeartIcon as HeartOutline,
   ChevronLeftIcon,
   ChevronRightIcon,
   PlayIcon,
   PauseIcon,
-  InformationCircleIcon,
+  ArrowsRightLeftIcon,
+  ArrowPathRoundedSquareIcon,
+  MicrophoneIcon,
+  ArrowsUpDownIcon,
   ArrowsPointingOutIcon,
-  ArrowDownIcon,
-  PlusIcon,
-  MinusIcon,
-  XMarkIcon
-} from '@heroicons/vue/24/outline'
-import { HeartIcon as HeartSolid } from '@heroicons/vue/24/solid'
+  SpeakerWaveIcon,
+  SpeakerXMarkIcon,
+} from '@heroicons/vue/24/outline';
+import { HeartIcon as HeartSolid } from '@heroicons/vue/24/solid';
 
-// Player state
-const coverUrl = ref('https://via.placeholder.com/150')
-const trackTitle = ref('Название трека')
-const artistName = ref('Исполнитель')
-const isLiked = ref(false)
-const isPlaying = ref(false)
-const currentTime = ref(0)
-const duration = ref(240)
-const volume = ref(50)
+// Хранилище Pinia
+const playerStore = usePlayerStore();
 
-// Floating window state
-const isFloating = ref(false)
-const isExpanded = ref(true)
-const isDragging = ref(false)
-const startPos = ref({ x: 0, y: 0 })
-const windowPos = ref({ x: 20, y: 20 })
-const floatingWindow = ref(null)
+// Данные трека из Pinia
+const coverUrl = computed(() => playerStore.currentTrack?.imageUrl || 'https://via.placeholder.com/150');
+const trackTitle = computed(() => playerStore.currentTrack?.title || 'Трек');
+const artistName = computed(() => playerStore.currentTrack?.artist || 'Исполнитель');
+const isPlaying = computed(() => playerStore.isPlaying);
 
-const windowStyle = computed(() => ({
-  left: `${windowPos.value.x}px`,
-  top: `${windowPos.value.y}px`,
-  width: isExpanded.value ? '300px' : 'auto',
-  minWidth: '200px'
-}))
+// Состояние плеера
+const isLiked = ref(false);
+const currentTime = ref(0);
+const duration = ref(0);
+const audio = ref(null);
+const volume = ref(1);
+const isMuted = ref(false);
+const shuffleActive = ref(false);
+const loopOne = ref(false);
+const loopAll = ref(false);
+
+// Инициализация Audio при смене трека
+watch(
+    () => playerStore.currentTrack,
+    (newTrack) => {
+      if (newTrack?.file) {
+        if (audio.value) {
+          audio.value.pause();
+          audio.value = null;
+        }
+        audio.value = new Audio(URL.createObjectURL(newTrack.file));
+        audio.value.volume = volume.value;
+        audio.value.onloadedmetadata = () => {
+          duration.value = audio.value.duration || 240;
+          currentTime.value = 0;
+        };
+        audio.value.ontimeupdate = () => {
+          currentTime.value = audio.value.currentTime;
+        };
+        audio.value.onended = () => {
+          if (loopOne.value) {
+            audio.value.currentTime = 0;
+            audio.value.play();
+          } else if (loopAll.value) {
+            nextTrack();
+          } else {
+            playerStore.togglePlay();
+          }
+        };
+        if (playerStore.isPlaying) {
+          audio.value.play();
+        }
+      }
+    }
+);
+
+// Синхронизация воспроизведения
+watch(
+    () => playerStore.isPlaying,
+    (playing) => {
+      if (audio.value) {
+        if (playing) {
+          audio.value.play();
+        } else {
+          audio.value.pause();
+        }
+      }
+    }
+);
+
+// Методы
+function togglePlay() {
+  playerStore.togglePlay();
+}
+
+function prevTrack() {
+  // Логика для предыдущего трека
+  console.log('Previous track');
+}
+
+function nextTrack() {
+  // Логика для следующего трека
+  console.log('Next track');
+}
+
+function toggleLike() {
+  isLiked.value = !isLiked.value;
+  if (playerStore.currentTrack) {
+    playerStore.currentTrack.isLiked = isLiked.value;
+  }
+}
+
+function toggleShuffle() {
+  shuffleActive.value = !shuffleActive.value;
+}
+
+const loopMode = ref('none')  // 'none' | 'all' | 'one'
+
+// При клике перебираем режимы
+function cycleLoopMode() {
+  if (loopMode.value === 'none')       loopMode.value = 'all'
+  else if (loopMode.value === 'all')   loopMode.value = 'one'
+  else /* one */                       loopMode.value = 'none'
+}
+
+// Класс для цвета: активный цвет для all и one, дефолтный для none
+const loopClass = computed(() => {
+  if (loopMode.value === 'none') return 'text-light-text dark:text-dark-text'
+  // для both all и one используем primary
+  return 'text-light-primary dark:text-dark-primary'
+})
+
+function onSpeechToText() {
+  console.log('Speech to text');
+}
+
+function toggleVersion() {
+  console.log('Toggle version');
+}
 
 function toggleFloatMode() {
-  isFloating.value = !isFloating.value
-  if (!isFloating.value) {
-    // Reset position when returning to bar mode
-    windowPos.value = { x: 20, y: 20 }
+  console.log('Toggle float mode');
+}
+
+function seek() {
+  if (audio.value) {
+    audio.value.currentTime = currentTime.value;
   }
 }
 
-function toggleWindowSize() {
-  isExpanded.value = !isExpanded.value
-}
-
-function closeWindow() {
-  isFloating.value = false
-}
-
-function startDrag(e) {
-  if (e.target.closest('button')) return // Ignore if clicked on a button
-
-  isDragging.value = true
-  startPos.value = {
-    x: e.clientX - windowPos.value.x,
-    y: e.clientY - windowPos.value.y
-  }
-
-  document.addEventListener('mousemove', drag)
-  document.addEventListener('mouseup', stopDrag)
-}
-
-function drag(e) {
-  if (!isDragging.value) return
-
-  windowPos.value = {
-    x: e.clientX - startPos.value.x,
-    y: e.clientY - startPos.value.y
+function updateVolume() {
+  if (audio.value) {
+    audio.value.volume = volume.value;
+    isMuted.value = volume.value === 0;
   }
 }
 
-function stopDrag() {
-  isDragging.value = false
-  document.removeEventListener('mousemove', drag)
-  document.removeEventListener('mouseup', stopDrag)
+function toggleMute() {
+  if (audio.value) {
+    isMuted.value = !isMuted.value;
+    audio.value.volume = isMuted.value ? 0 : volume.value;
+  }
 }
-
-// Player controls
-function toggleLike()       { isLiked.value = !isLiked.value }
-function prevTrack()        { /* ... */ }
-function nextTrack()        { /* ... */ }
-function togglePlay()       { isPlaying.value = !isPlaying.value }
-function openInfo()         { /* ... */ }
 
 function formatTime(sec) {
-  const m = String(Math.floor(sec / 60)).padStart(2, '0')
-  const s = String(Math.floor(sec % 60)).padStart(2, '0')
-  return `${m}:${s}`
+  const m = String(Math.floor(sec / 60)).padStart(2, '0');
+  const s = String(Math.floor(sec % 60)).padStart(2, '0');
+  return `${m}:${s}`;
 }
 </script>
 
 <style scoped>
-/* Draggable window Header */
-.cursor-move {
-  cursor: move;
-  user-select: none;
-}
-
-/* Range input styling */
 input[type="range"] {
-  @apply appearance-none h-[1px] rounded-full;
-}
-input[type="range"]::-webkit-slider-thumb {
-  @apply appearance-none w-[3] h-[3] rounded-full  cursor-pointer;
+  appearance: none; /* Убирает стандартный стиль браузера */
+  border-radius: 9999px; /* Полностью закруглённые края (аналог rounded-full) */
+  height: 0.25rem; /* Аналог h-1 */
+  background-color: #d1d5db; /* Аналог bg-gray-300 */
 }
 
-.play-icon-offset {
-  position: relative;
-  left: 1px;
+/* Тёмная тема через класс .dark */
+.dark input[type="range"] {
+  background-color: #4b5563; /* Аналог dark:bg-gray-600 */
+}
+
+/* Webkit (Chrome, Safari) */
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  border-radius: 9999px;
+  height: 0.75rem; /* Аналог h-3 */
+  width: 0.75rem; /* Аналог w-3 */
+  background-color: #6366f1; /* Аналог bg-light-primary */
+  cursor: pointer;
+}
+
+.dark input[type="range"]::-webkit-slider-thumb {
+  background-color: #8b5cf6; /* Аналог dark:bg-dark-primary */
+}
+
+/* Firefox */
+input[type="range"]::-moz-range-thumb {
+  border-radius: 9999px;
+  height: 0.75rem; /* Аналог h-3 */
+  width: 0.75rem; /* Аналог w-3 */
+  background-color: #6366f1; /* Аналог bg-light-primary */
+  cursor: pointer;
+  border: none; /* Firefox добавляет границу по умолчанию, убираем */
+}
+
+.dark input[type="range"]::-moz-range-thumb {
+  background-color: #8b5cf6; /* Аналог dark:bg-dark-primary */
 }
 </style>

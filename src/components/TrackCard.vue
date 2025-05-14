@@ -2,11 +2,23 @@
 <template>
   <div class="bg-light-surface dark:bg-dark-surface shadow-lg rounded p-3 overflow-visible group relative">
     <!-- Обложка -->
-    <img
-        :src="track.imageUrl"
-        :alt="track.title"
-        class="w-full md:w-full block rounded object-cover"
-    />
+    <div class="w-full aspect-square overflow-hidden rounded">
+      <template v-if="track.imageUrl">
+        <img
+            :src="track.imageUrl"
+            :alt="track.title"
+            class="w-full h-full object-cover"
+        />
+      </template>
+      <template v-else>
+        <div
+            class="w-full h-full flex items-center justify-center text-2xl font-bold text-white"
+            :style="{ backgroundColor: avatarBgColor }"
+        >
+          {{ avatarLetter }}
+        </div>
+      </template>
+    </div>
 
     <!-- Overlay buttons -->
     <div class="absolute inset-0 bg-black rounded bg-opacity-0 group-hover:bg-opacity-60 flex items-center justify-evenly opacity-0 group-hover:opacity-60 transition">
@@ -48,9 +60,30 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 const props = defineProps({
   track: { type: Object, required: true }
 })
+
+// Буква для аватара: первая буква названия, или артиста
+const avatarLetter = computed(() => {
+  const str = props.track.title || props.track.artist || ''
+  return str.charAt(0).toUpperCase() || '?'
+})
+
+// Генерация фонового цвета по имени (можно любой хэш-функцией)
+const avatarBgColor = computed(() => {
+  // простая хэш-функция для получения 0–5 индекса
+  const colors = ['#F87171','#FBBF24','#34D399','#60A5FA','#A78BFA','#F472B6']
+  let hash = 0
+  const key = props.track.title + props.track.artist
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash * 31 + key.charCodeAt(i)) & 0xffffffff
+  }
+  return colors[Math.abs(hash) % colors.length]
+})
+
+
 </script>
 
 <style scoped>
