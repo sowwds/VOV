@@ -4,6 +4,7 @@ import router from './router'
 import App from './App.vue'
 import '@/assets/input.css'   // подключение Tailwind
 import { useThemeStore, applyTheme } from '@/store/theme'
+import { useAuthStore } from '@/store/auth';
 
 
 const app = createApp(App)
@@ -15,4 +16,7 @@ app.use(router)
 const theme = useThemeStore(pinia)
 applyTheme(theme.mode)
 
-app.mount('#app')
+const authStore = useAuthStore();
+authStore.initialize().then(() => {
+  app.mount('#app');
+});
