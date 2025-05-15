@@ -20,11 +20,25 @@ const currentComponent = computed(() => {
     default: return null;
   }
 });
+
+const goToPreviousStep = () => {
+  if (restorationStore.currentStep > 1) {
+    if (restorationStore.currentStep === 4) {
+      restorationStore.setCurrentStep(2); // На шаге 4 переходим на шаг 2
+    } else {
+      restorationStore.setCurrentStep(restorationStore.currentStep - 1); // Иначе уменьшаем на 1
+    }
+  }
+};
 </script>
 
 <template>
   <div class="relative h-full">
-      <component :is="currentComponent" />
+      <component
+        :is="currentComponent"
+        :go-to-previous-step="goToPreviousStep"
+        :show-back-button="restorationStore.currentStep > 1"
+      />
     <StepIndicator class="absolute bottom-0 w-full" />
   </div>
 </template>
