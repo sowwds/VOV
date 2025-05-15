@@ -7,11 +7,7 @@ import BlankLayout from '@/components/Layout/BlankLayout.vue';
 
 // Pages
 import Home from '@/views/Home.vue';
-import RestorationStep1 from '@/views/RestorationStep1.vue';
-import RestorationStep2 from '@/views/RestorationStep2.vue';
-import RestorationStep3 from '@/views/RestorationStep3.vue';
-import RestorationStep4 from '@/views/RestorationStep4.vue';
-import RestorationStep5 from '@/views/RestorationStep5.vue';
+import Restoration from '@/views/Restoration.vue';
 import Collection from '@/views/Collection.vue';
 import ProfileSettings from '@/views/ProfileSettings.vue';
 import Library from '@/views/Library.vue';
@@ -31,18 +27,7 @@ const routes = [
     },
     children: [
       { path: '', name: 'Главная', component: Home },
-      {
-        path: 'restoration',
-        name: 'Реставрация',
-        children: [
-            { path: '', redirect: (to) => `/restoration/step1` }, // Исправлено с явным объектом пути
-          { path: 'step1', name: 'Демо реставрации', component: RestorationStep1 },
-          { path: 'step2', name: 'Загрузка аудио', component: RestorationStep2 },
-          { path: 'step3', name: 'Реставрация аудио', component: RestorationStep3 },
-          { path: 'step4', name: 'Редактирование метаданных', component: RestorationStep4 },
-          { path: 'step5', name: 'Реставрация завершена', component: RestorationStep5 },
-        ],
-      },
+      { path: 'restoration', name: 'Реставрация', component: Restoration },
       { path: 'collection', name: 'Коллекция', component: Collection },
       { path: 'profile-settings', name: 'Настройки профиля', component: ProfileSettings },
       { path: 'library', name: 'Library', component: Library },
@@ -75,12 +60,6 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
-});
-
-// Отладочная информация (удалить после теста)
-router.beforeEach((to, from, next) => {
-  console.log('Navigating to:', to.path);
-  next();
 });
 
 export default router;
