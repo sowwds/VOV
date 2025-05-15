@@ -1,23 +1,24 @@
 import { defineStore } from 'pinia';
+import jsmediatags from 'jsmediatags';
 
 export const useRestorationStore = defineStore('restoration', {
   state: () => ({
     currentStep: 1,
-    files: [],
+    file: null,
     title: '',
     author: '',
     year: '',
     album: '',
     country: '',
-    coverFile: null,
+    coverUrl: null,
     restoredAudioUrl: '',
   }),
   actions: {
     setCurrentStep(step) {
       this.currentStep = step;
     },
-    setFiles(files) {
-      this.files = files;
+    setFile(file) {
+      this.file = file;
     },
     setTitle(title) {
       this.title = title;
@@ -34,21 +35,51 @@ export const useRestorationStore = defineStore('restoration', {
     setCountry(country) {
       this.country = country;
     },
-    setCoverFile(file) {
-      this.coverFile = file;
+    setCoverUrl(url) {
+      this.coverUrl = url;
     },
     setRestoredAudioUrl(url) {
       this.restoredAudioUrl = url;
     },
+    async parseAudioMetadata(file) {
+      if (!file) return;
+      try {
+        const tags = await new Promise((resolve, reject) => {
+          jsmediatags.read(file, {
+            onSuccess: (tag) => resolve(tag.tags),
+            onError: (error) => reject(error),
+          });
+        });
+        this.setTitle(tags.title || '');
+        this.setAuthor(tags.artist || '');
+        this.setYear(tags.year || '');
+        this.setAlbum(tags.album || '');
+        if (tags.picture) {
+          const base64String = btoa(
+            String.fromCharCode(...new Uint8Array(tags.picture.data))
+          );
+          this.setCoverUrl(`data:${tags.picture.format};base64,${base64String}`);
+        } else {
+          this.setCoverUrl(null);
+        }
+      } catch (error) {
+        console.error('Ошибка парсинга метаданных:', error);
+        this.setTitle('');
+        this.setAuthor('');
+        this.setYear('');
+        this.setAlbum('');
+        this.setCoverUrl(null);
+      }
+    },
     reset() {
       this.currentStep = 1;
-      this.files = [];
+      this.file = null;
       this.title = '';
       this.author = '';
       this.year = '';
       this.album = '';
       this.country = '';
-      this.coverFile = null;
+      this.coverUrl = null;
       this.restoredAudioUrl = '';
     },
   },

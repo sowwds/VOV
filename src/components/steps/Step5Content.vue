@@ -22,7 +22,7 @@ const metadata = computed(() => ({
   year: restorationStore.year || 'Не указан',
   album: restorationStore.album || 'Не указан',
   country: restorationStore.country || 'Не указана',
-  cover: restorationStore.coverFile ? URL.createObjectURL(restorationStore.coverFile) : 'https://via.placeholder.com/150',
+  cover: restorationStore.coverUrl || 'https://via.placeholder.com/150',
   restoredAudioUrl: restorationStore.restoredAudioUrl || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
 }));
 

@@ -18,11 +18,10 @@ const restorationStore = useRestorationStore();
 const isDragging = ref(false);
 const fileError = ref('');
 
-// Проверка файла на формат и размер
 const validateFiles = (files) => {
   const maxSizeMB = 70;
-  const maxSizeBytes = maxSizeMB * 1024 * 1024; // 70 MB в байтах
-  const allowedType = 'audio/mpeg'; // MIME-тип для MP3
+  const maxSizeBytes = maxSizeMB * 1024 * 1024;
+  const allowedType = 'audio/mpeg';
 
   for (const file of files) {
     if (file.type !== allowedType) {
@@ -35,9 +34,8 @@ const validateFiles = (files) => {
   return '';
 };
 
-// Проверка, есть ли валидные файлы
-const hasValidFiles = computed(() => {
-  return restorationStore.files.length > 0 && !fileError.value;
+const hasValidFile = computed(() => {
+  return restorationStore.file !== null && !fileError.value;
 });
 
 const onDragOver = (event) => {
@@ -49,42 +47,42 @@ const onDragLeave = () => {
   isDragging.value = false;
 };
 
-const onDrop = (event) => {
+const onDrop = async (event) => {
   event.preventDefault();
   isDragging.value = false;
   const files = event.dataTransfer.files;
   if (files.length) {
-    fileError.value = validateFiles(files);
+    const file = files[0];
+    fileError.value = validateFiles([file]);
     if (!fileError.value) {
-      restorationStore.setFiles(Array.from(files));
-      console.log('Dropped files:', restorationStore.files);
+      restorationStore.setFile(file);
+      await restorationStore.parseAudioMetadata(file);
     } else {
-      restorationStore.setFiles([]); // Сбрасываем файлы, если есть ошибка
+      restorationStore.setFile(null);
     }
   }
 };
 
-const onFileSelect = (event) => {
+const onFileSelect = async (event) => {
   const files = event.target.files;
   if (files.length) {
-    fileError.value = validateFiles(files);
+    const file = files[0];
+    fileError.value = validateFiles([file]);
     if (!fileError.value) {
-      restorationStore.setFiles(Array.from(files));
-      console.log('Selected files:', restorationStore.files);
+      restorationStore.setFile(file);
+      await restorationStore.parseAudioMetadata(file);
     } else {
-      restorationStore.setFiles([]); // Сбрасываем файлы, если есть ошибка
+      restorationStore.setFile(null);
     }
   }
 };
 
 const uploadFiles = async () => {
-  if (hasValidFiles.value) {
+  if (hasValidFile.value) {
     const formData = new FormData();
-    restorationStore.files.forEach((file, index) => {
-      formData.append(`file${index}`, file);
-    });
+    formData.append('file', restorationStore.file);
     try {
-      console.log('Uploading files:', restorationStore.files);
+      console.log('Uploading file:', restorationStore.file);
       restorationStore.setCurrentStep(3);
     } catch (err) {
       console.error('Upload failed:', err);
@@ -113,22 +111,22 @@ const uploadFiles = async () => {
         @dragleave="onDragLeave"
         @drop="onDrop"
       >
-        <div class="text-lg font-medium mb-2 text-light-text dark:text-dark-text">Перетащите файлы сюда</div>
+        <div class="text-lg font-medium mb-2 text-light-text dark:text-dark-text">Перетащите файл сюда</div>
         <div class="text-sm text-light-text-muted dark:text-dark-text-muted mb-4">или выберите файл</div>
         <label class="bg-light-secondary text-dark-text px-4 py-2 rounded hover:bg-light-primary hovercursor-pointer dark:text-dark-text dark:bg-dark-secondary hover:bg-dark-primary">
           <span>Выбрать файл</span>
-          <input type="file" multiple accept=".mp3,audio/mpeg" class="hidden" @change="onFileSelect" />
+          <input type="file" accept=".mp3,audio/mpeg" class="hidden" @change="onFileSelect" />
         </label>
         <div v-if="fileError" class="mt-4 text-sm text-red-500">
           {{ fileError }}
         </div>
-        <div v-else-if="restorationStore.files.length" class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+        <div v-else-if="restorationStore.file" class="mt-4 text-sm text-gray-500 dark:text-gray-400">
           Файл выбран
         </div>
       </div>
       <button
         class="mt-4 w-full px-4 py-2 rounded bg-light-primary dark:bg-dark-primary text-dark-text hover:bg-light-secondary dark:hover:bg-dark-secondary disabled:bg-gray-500 disabled:cursor-not-allowed"
-        :disabled="!hasValidFiles"
+        :disabled="!hasValidFile"
         @click="uploadFiles"
       >
         Загрузить

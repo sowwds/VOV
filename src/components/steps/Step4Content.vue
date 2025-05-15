@@ -35,10 +35,10 @@ const validateCoverFile = (file) => {
 
 // Проверка, есть ли валидный файл обложки (опционально, так как обложка не обязательна)
 const hasValidCover = computed(() => {
-  return !restorationStore.coverFile || !coverError.value;
+  return !restorationStore.coverUrl || !coverError.value; // Изменили с coverFile на coverUrl
 });
 
-const coverPreview = computed(() => restorationStore.coverFile ? URL.createObjectURL(restorationStore.coverFile) : null);
+const coverPreview = computed(() => restorationStore.coverUrl ? restorationStore.coverUrl : null); // Изменили с coverFile на coverUrl
 
 // Следим за изменениями новых полей
 watch(() => restorationStore.title, (newTitle) => {
@@ -74,9 +74,9 @@ const onDrop = (event) => {
     const file = files[0];
     coverError.value = validateCoverFile(file);
     if (!coverError.value) {
-      restorationStore.setCoverFile(file);
+      restorationStore.setCoverUrl(URL.createObjectURL(file)); // Изменили setCoverFile на setCoverUrl
     } else {
-      restorationStore.setCoverFile(null);
+      restorationStore.setCoverUrl(null); // Изменили setCoverFile на setCoverUrl
     }
   }
 };
@@ -86,9 +86,9 @@ const onCoverSelect = (event) => {
   if (file) {
     coverError.value = validateCoverFile(file);
     if (!coverError.value) {
-      restorationStore.setCoverFile(file);
+      restorationStore.setCoverUrl(URL.createObjectURL(file)); // Изменили setCoverFile на setCoverUrl
     } else {
-      restorationStore.setCoverFile(null);
+      restorationStore.setCoverUrl(null); // Изменили setCoverFile на setCoverUrl
     }
   }
 };
@@ -140,7 +140,7 @@ const goToNext = () => {
           <div v-if="coverError" class="mt-2 text-sm text-red-500">
             {{ coverError }}
           </div>
-          <div v-else-if="restorationStore.coverFile" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          <div v-else-if="restorationStore.coverUrl" class="mt-2 text-sm text-gray-500 dark:text-gray-400"> <!-- Изменили с coverFile на coverUrl -->
             Файл выбран
           </div>
         </div>
