@@ -1,54 +1,64 @@
-<!-- TrackCard.vue -->
 <template>
-  <div class="bg-light-surface dark:bg-dark-surface shadow-lg rounded p-3 overflow-visible group relative">
+  <div
+      class="bg-light-surface dark:bg-dark-surface shadow-lg rounded p-3 overflow-visible group relative"
+      @mouseleave="handleCardMouseLeave"
+  >
     <!-- Обложка -->
     <div class="w-full aspect-square overflow-hidden rounded">
-      <template v-if="track.imageUrl">
-        <img
-            :src="track.imageUrl"
-            :alt="track.title"
-            class="w-full h-full object-cover"
-        />
-      </template>
-      <template v-else>
-        <div
-            class="w-full h-full flex items-center justify-center text-2xl font-bold text-white"
-            :style="{ backgroundColor: avatarBgColor }"
-        >
-          {{ avatarLetter }}
-        </div>
-      </template>
+      <img
+          :src="avatarUrl"
+          :alt="track.title"
+          class="w-full h-full object-cover"
+      />
     </div>
 
-    <!-- Overlay buttons -->
-    <div class="absolute inset-0 bg-black rounded bg-opacity-0 group-hover:bg-opacity-60 flex items-center justify-evenly opacity-0 group-hover:opacity-60 transition">
+    <!-- Overlay -->
+    <div
+        class="absolute inset-0 rounded opacity-0 group-hover:opacity-60 flex items-center justify-evenly
+           bg-black transition-opacity duration-200 z-10"
+    >
+      <!-- Play/Pause -->
       <button
-          @click="$emit('like', track.id)"
-          class="hover:scale-110 text-white opacity-0 transform translate-y-3 group-hover:translate-y-0 group-hover:opacity-100 transition"
+          @click.stop="onPlay"
+          class="p-1 hover:scale-110 text-white transition-transform duration-200"
       >
-        <!-- Heart Icon -->
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-heart" viewBox="0 0 16 16">
-          <path d="M8 2.748l-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01L8 2.748zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143c.06.055.119.112.176.171a3.12 3.12 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15z"/>
-        </svg>
+        <component :is="isPlaying ? PauseIcon : PlayIcon" class="w-8 h-8" />
       </button>
-      <button
-          @click="$emit('play', track.id)"
-          class="hover:scale-110 text-white opacity-0 transform translate-y-3 group-hover:translate-y-0 group-hover:opacity-100 transition"
-      >
-        <!-- Play Icon -->
-        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-play-circle-fill" viewBox="0 0 16 16">
-          <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM6.79 5.093A.5.5 0 0 0 6 5.5v5a.5.5 0 0 0 .79.407l3.5-2.5a.5.5 0 0 0 0-.814l-3.5-2.5z"/>
-        </svg>
-      </button>
-      <button
-          @click="$emit('more', track.id)"
-          class="hover:scale-110 text-white opacity-0 transform translate-y-3 group-hover:translate-y-0 group-hover:opacity-100 transition"
-      >
-        <!-- More Icon -->
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-three-dots" viewBox="0 0 16 16">
-          <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
-        </svg>
-      </button>
+
+      <!-- More menu toggle -->
+      <div class="relative">
+        <button
+            @mouseenter="openMenu"
+            class="p-1 hover:scale-110 text-white transition-transform duration-200"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Options popover -->
+    <div
+        v-show="showMenu"
+        ref="menuRef"
+        class="absolute left-full top-1/2 transform -translate-y-1/2 z-50"
+        @mouseleave="closeMenuWithDelay"
+    >
+      <div class="bg-white dark:bg-dark-surface shadow-xl rounded-md w-40 overflow-hidden">
+        <button
+            @click="addNext"
+            class="block w-full text-left px-4 py-2 text-sm text-light-text dark:text-dark-text hover:bg-light-primary dark:hover:bg-dark-primary transition-colors"
+        >
+          Добавить следующим
+        </button>
+        <button
+            @click="addToQueue"
+            class="block w-full text-left px-4 py-2 text-sm text-light-text dark:text-dark-text hover:bg-light-primary dark:hover:bg-dark-primary transition-colors"
+        >
+          Добавить в очередь
+        </button>
+      </div>
     </div>
 
     <!-- Title and artist -->
@@ -60,32 +70,88 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-const props = defineProps({
-  track: { type: Object, required: true }
-})
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { usePlayerStore } from '@/store/player'
+import { getTrackAvatar } from '@/services/avatarService.js'
+import { PlayIcon, PauseIcon } from '@heroicons/vue/24/outline'
 
-// Буква для аватара: первая буква названия, или артиста
-const avatarLetter = computed(() => {
-  const str = props.track.title || props.track.artist || ''
-  return str.charAt(0).toUpperCase() || '?'
-})
+const props = defineProps({ track: { type: Object, required: true } })
+const player = usePlayerStore()
+const showMenu = ref(false)
+const menuRef = ref(null)
+const menuTimeout = ref(null)
 
-// Генерация фонового цвета по имени (можно любой хэш-функцией)
-const avatarBgColor = computed(() => {
-  // простая хэш-функция для получения 0–5 индекса
-  const colors = ['#F87171','#FBBF24','#34D399','#60A5FA','#A78BFA','#F472B6']
-  let hash = 0
-  const key = props.track.title + props.track.artist
-  for (let i = 0; i < key.length; i++) {
-    hash = (hash * 31 + key.charCodeAt(i)) & 0xffffffff
+const isCurrent = computed(() => player.currentTrack === props.track.id)
+const isPlaying = computed(() => player.isPlaying && isCurrent.value)
+
+function onPlay() {
+  if (!isCurrent.value) {
+    player.playTrack(props.track)
+  } else {
+    player.togglePlay()
   }
-  return colors[Math.abs(hash) % colors.length]
+}
+
+function openMenu() {
+  clearTimeout(menuTimeout.value)
+  showMenu.value = true
+}
+
+function closeMenu() {
+  showMenu.value = false
+}
+
+function closeMenuWithDelay() {
+  menuTimeout.value = setTimeout(() => {
+    closeMenu()
+  }, 300)
+}
+
+function handleCardMouseLeave(e) {
+  if (!menuRef.value || !menuRef.value.contains(e.relatedTarget)) {
+    closeMenu()
+  }
+}
+
+function addToQueue() {
+  player.enqueue(props.track)
+  closeMenu()
+}
+
+function addNext() {
+  player.enqueueNext(props.track)
+  closeMenu()
+}
+
+const avatarUrl = computed(() => getTrackAvatar(props.track))
+
+// Закрытие меню при клике вне его
+function handleClickOutside(e) {
+  if (menuRef.value && !menuRef.value.contains(e.target)) {
+    closeMenu()
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
 })
 
-
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+  clearTimeout(menuTimeout.value)
+})
 </script>
 
 <style scoped>
-/* ничего дополнительного */
+/* Плавное появление/исчезновение меню */
+.v-enter-active,
+.v-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.v-enter-from,
+.v-leave-to {
+  opacity: 0;
+  transform: translateY(-10px) translateX(0);
+}
 </style>

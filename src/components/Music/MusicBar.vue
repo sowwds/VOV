@@ -1,11 +1,12 @@
 <template>
   <div
-      class="bg-light-surface dark:bg-dark-surface border-t border-gray-200 dark:border-dark-border py-4 px-6 flex items-center justify-between h-20"
+      class="bg-light-surface dark:bg-dark-surface border-t border-gray-200 dark:border-dark-border py-4 px-6 flex flex-wrap items-center justify-between h-20
+         gap-y-2 md:gap-y-0"
   >
     <!-- ЛЕВАЯ СЕКЦИЯ: обложка + название + автор -->
     <div class="flex items-center space-x-3 w-1/4 min-w-[200px]">
       <img
-          :src="coverUrl"
+          :src="currentAvatar"
           alt="Cover"
           class="w-12 h-12 object-cover rounded bg-gray-100 dark:bg-gray-700"
       />
@@ -17,6 +18,13 @@
           {{ artistName }}
         </p>
       </div>
+      <!-- Лайк -->
+      <button
+          @click="toggleLike"
+          class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200"
+      >
+        <component :is="isLiked ? HeartSolid : HeartOutline" class="w-5 h-5" />
+      </button>
     </div>
 
     <!-- ЦЕНТРАЛЬНАЯ СЕКЦИЯ: управление воспроизведением + прогресс -->
@@ -57,16 +65,13 @@
 
         <!-- Loop: трек -->
         <button
-            @click="cycleLoopMode"
+            @click="toggleLoopMode"
             :class="loopClass"
             class="p-2 rounded hover:scale-110 active:scale-95 transition-transform duration-200"
+            title="Режим повтора"
         >
-          <!-- контейнер размером под иконку -->
           <div class="relative w-6 h-6">
-            <!-- сама иконка -->
             <ArrowPathRoundedSquareIcon class="w-full h-full" />
-
-            <!-- бейдж «1» строго в углу -->
             <span
                 v-if="loopMode === 'one'"
                 class="absolute bottom-0 right-0 bg-light-primary dark:bg-dark-primary
@@ -94,7 +99,7 @@
     </div>
 
     <!-- ПРАВАЯ СЕКЦИЯ: доп. функции + громкость -->
-    <div class="flex items-center space-x-4 w-1/4 justify-end min-w-[200px]">
+    <div class="flex items-center space-x-4 w-1/4 justify-end min-w-[200px] relative ">
       <!-- Speech to text -->
       <button
           @click="onSpeechToText"
@@ -111,13 +116,10 @@
         <ArrowsUpDownIcon class="w-5 h-5" />
       </button>
 
-      <!-- Лайк -->
-      <button
-          @click="toggleLike"
-          class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200"
-      >
-        <component :is="isLiked ? HeartSolid : HeartOutline" class="w-5 h-5" />
+      <button @click="toggleQueue" class="p-2 rounded …">
+        <QueueListIcon class="w-5 h-5 text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200"/>
       </button>
+      <QueuePopOver v-if="showQueue" @close="showQueue = false" />
 
       <!-- Mute -->
       <button
@@ -150,8 +152,9 @@
 </template>
 
 <script setup>
+import QueuePopOver from "@/components/Music/QueuePopOver.vue";
 import { ref, watch, computed } from 'vue';
-import { usePlayerStore } from '@/store/player';
+import { usePlayerStore } from '@/store/player.js';
 import {
   HeartIcon as HeartOutline,
   ChevronLeftIcon,
@@ -165,6 +168,7 @@ import {
   ArrowsPointingOutIcon,
   SpeakerWaveIcon,
   SpeakerXMarkIcon,
+  QueueListIcon,
 } from '@heroicons/vue/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/vue/24/solid';
 
@@ -172,9 +176,9 @@ import { HeartIcon as HeartSolid } from '@heroicons/vue/24/solid';
 const playerStore = usePlayerStore();
 
 // Данные трека из Pinia
-const coverUrl = computed(() => playerStore.currentTrack?.imageUrl || 'https://via.placeholder.com/150');
-const trackTitle = computed(() => playerStore.currentTrack?.title || 'Трек');
-const artistName = computed(() => playerStore.currentTrack?.artist || 'Исполнитель');
+const currentAvatar = computed(() => playerStore.currentTrackObj?.avatarUrl);
+const trackTitle = computed(() => playerStore.currentTrackObj?.title || 'Трек');
+const artistName = computed(() => playerStore.currentTrackObj?.artist || 'Исполнитель');
 const isPlaying = computed(() => playerStore.isPlaying);
 
 // Состояние плеера
@@ -184,40 +188,52 @@ const duration = ref(0);
 const audio = ref(null);
 const volume = ref(1);
 const isMuted = ref(false);
-const shuffleActive = ref(false);
-const loopOne = ref(false);
-const loopAll = ref(false);
+
+const loopMode = computed(() => playerStore.loopMode)
+const shuffleActive = computed(() => playerStore.shuffleActive)
+
+
+const toggleLoopMode = () => playerStore.toggleLoopMode()
+const nextTrack = () => playerStore.nextTrack()
+const prevTrack = () => playerStore.prevTrack()
+const toggleShuffle = () => playerStore.toggleShuffle()
+const showQueue = ref(false)
+function toggleQueue() { showQueue.value = !showQueue.value }
 
 // Инициализация Audio при смене трека
 watch(
-    () => playerStore.currentTrack,
-    (newTrack) => {
-      if (newTrack?.file) {
+    () => playerStore.currentTrackObj,
+    (newTrackObj) => {
+      if (newTrackObj?.file) {
         if (audio.value) {
-          audio.value.pause();
-          audio.value = null;
+          audio.value.pause()
+          audio.value = null
         }
-        audio.value = new Audio(URL.createObjectURL(newTrack.file));
-        audio.value.volume = volume.value;
+        audio.value = new Audio(URL.createObjectURL(newTrackObj.file))
+        audio.value.volume = volume.value
+
         audio.value.onloadedmetadata = () => {
-          duration.value = audio.value.duration || 240;
-          currentTime.value = 0;
-        };
+          duration.value = audio.value.duration || 240
+          currentTime.value = 0
+        }
+
         audio.value.ontimeupdate = () => {
-          currentTime.value = audio.value.currentTime;
-        };
+          currentTime.value = audio.value.currentTime
+        }
+
         audio.value.onended = () => {
-          if (loopOne.value) {
-            audio.value.currentTime = 0;
-            audio.value.play();
-          } else if (loopAll.value) {
-            nextTrack();
+          if (playerStore.loopMode === 'one') {
+            // Повтор текущего трека
+            audio.value.currentTime = 0
+            audio.value.play()
           } else {
-            playerStore.togglePlay();
+            // Переход к следующему треку (учитывает режим зацикливания очереди)
+            playerStore.nextTrack()
           }
-        };
+        }
+
         if (playerStore.isPlaying) {
-          audio.value.play();
+          audio.value.play()
         }
       }
     }
@@ -242,16 +258,6 @@ function togglePlay() {
   playerStore.togglePlay();
 }
 
-function prevTrack() {
-  // Логика для предыдущего трека
-  console.log('Previous track');
-}
-
-function nextTrack() {
-  // Логика для следующего трека
-  console.log('Next track');
-}
-
 function toggleLike() {
   isLiked.value = !isLiked.value;
   if (playerStore.currentTrack) {
@@ -259,25 +265,12 @@ function toggleLike() {
   }
 }
 
-function toggleShuffle() {
-  shuffleActive.value = !shuffleActive.value;
-}
-
-const loopMode = ref('none')  // 'none' | 'all' | 'one'
-
-// При клике перебираем режимы
-function cycleLoopMode() {
-  if (loopMode.value === 'none')       loopMode.value = 'all'
-  else if (loopMode.value === 'all')   loopMode.value = 'one'
-  else /* one */                       loopMode.value = 'none'
-}
-
-// Класс для цвета: активный цвет для all и one, дефолтный для none
 const loopClass = computed(() => {
-  if (loopMode.value === 'none') return 'text-light-text dark:text-dark-text'
-  // для both all и one используем primary
-  return 'text-light-primary dark:text-dark-primary'
+  return loopMode.value === 'none'
+      ? 'text-light-text dark:text-dark-text'
+      : 'text-light-primary dark:text-dark-primary'
 })
+
 
 function onSpeechToText() {
   console.log('Speech to text');
@@ -358,4 +351,5 @@ input[type="range"]::-moz-range-thumb {
 .dark input[type="range"]::-moz-range-thumb {
   background-color: #8b5cf6; /* Аналог dark:bg-dark-primary */
 }
+
 </style>
