@@ -26,52 +26,26 @@
 <script setup>
 import TrackCard from '@/components/TrackCard.vue';
 import { usePlayerStore } from '@/store/player';
-import jsmediatags from 'jsmediatags';
+import {useParserStore} from "@/store/parser.js";
 import { computed } from 'vue';
 
 const playerStore = usePlayerStore();
+const parserStore = useParserStore();
 const tracks = computed(() => playerStore.tracks);
 
-let trackIdCounter = 1;
+async function handleFileUpload(event) {
+  const files = event.target.files
+  if (!files.length) return
 
-function handleFileUpload(event) {
-  const files = Array.from(event.target.files);
-  files.forEach((file) => {
-    jsmediatags.read(file, {
-      onSuccess: (tag) => {
-        const { title, artist, picture } = tag.tags;
-        let imageUrl = null;
-
-        if (picture) {
-          const base64String = btoa(
-              picture.data.reduce((data, byte) => data + String.fromCharCode(byte), '')
-          );
-          imageUrl = `data:${picture.format};base64,${base64String}`;
-        }
-
-        const newTrack = {
-          id: trackIdCounter++,
-          title: title || file.name,
-          artist: artist || 'Unknown Artist',
-          imageUrl: imageUrl,
-          file,
-        };
-
-        playerStore.addTrack(newTrack);
-      },
-      onError: (error) => {
-        console.error('Ошибка парсинга метаданных:', error);
-        const newTrack = {
-          id: trackIdCounter++,
-          title: file.name,
-          artist: 'Unknown Artist',
-          imageUrl: null,
-          file,
-        };
-        playerStore.addTrack(newTrack);
-      },
-    });
-  });
+  try {
+    const parsedTracks = await parserStore.parseAudioFiles(files)
+    playerStore.addTracks(parsedTracks) // Добавим метод addTracks в playerStore
+  } catch (error) {
+    console.error('Error processing files:', error)
+  } finally {
+    // Сброс значения input, чтобы можно было загружать те же файлы снова
+    event.target.value = ''
+  }
 }
 
 function onPlay(id) {
