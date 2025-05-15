@@ -40,6 +40,23 @@ const hasValidCover = computed(() => {
 
 const coverPreview = computed(() => restorationStore.coverFile ? URL.createObjectURL(restorationStore.coverFile) : null);
 
+// Следим за изменениями новых полей
+watch(() => restorationStore.title, (newTitle) => {
+  restorationStore.setTitle(newTitle);
+});
+watch(() => restorationStore.author, (newAuthor) => {
+  restorationStore.setAuthor(newAuthor);
+});
+watch(() => restorationStore.year, (newYear) => {
+  restorationStore.setYear(newYear);
+});
+watch(() => restorationStore.album, (newAlbum) => {
+  restorationStore.setAlbum(newAlbum);
+});
+watch(() => restorationStore.country, (newCountry) => {
+  restorationStore.setCountry(newCountry);
+});
+
 const onDragOver = (event) => {
   event.preventDefault();
   isDragging.value = true;
@@ -59,7 +76,7 @@ const onDrop = (event) => {
     if (!coverError.value) {
       restorationStore.setCoverFile(file);
     } else {
-      restorationStore.setCoverFile(null); // Сбрасываем обложку, если есть ошибка
+      restorationStore.setCoverFile(null);
     }
   }
 };
@@ -71,7 +88,7 @@ const onCoverSelect = (event) => {
     if (!coverError.value) {
       restorationStore.setCoverFile(file);
     } else {
-      restorationStore.setCoverFile(null); // Сбрасываем обложку, если есть ошибка
+      restorationStore.setCoverFile(null);
     }
   }
 };
@@ -84,8 +101,8 @@ const goToNext = () => {
 </script>
 
 <template>
-  <div class="relative h-full flex flex-col items-center justify-center p-4">
-    <div class="flex justify-start w-full max-w-md mb-4">
+  <div class="relative flex flex-col items-center justify-center pb-16">
+    <div class="flex justify-start w-full max-w-screen-lg mb-4">
       <button
         v-if="showBackButton"
         class="flex items-center text-light-text dark:text-dark-text px-4 py-2 rounded cursor-pointer"
@@ -95,7 +112,7 @@ const goToNext = () => {
       </button>
     </div>
     <h1 class="text-3xl font-bold text-light-text dark:text-dark-text mb-6">Редактирование метаданных</h1>
-    <div class="bg-light-surface dark:bg-dark-surface p-6 rounded-lg shadow-lg w-full max-w-md">
+    <div class="bg-light-surface dark:bg-dark-surface p-6 rounded-lg shadow-lg w-full max-w-screen-lg">
       <div class="flex flex-wrap justify-around">
         <div>
           <h2 class="text-xl mb-2 text-light-text dark:text-dark-text">Обложка</h2>
@@ -144,6 +161,35 @@ const goToNext = () => {
               v-model="restorationStore.author"
               class="w-full p-2 border border-light-text dark:border-dark-text rounded bg-light-bg text-light-text dark:bg-dark-bg dark:text-dark-text"
               placeholder="Введите автора"
+            />
+          </div>
+          <div class="mb-6">
+            <h2 class="text-xl mb-2 text-light-text dark:text-dark-text">Альбом</h2>
+            <input
+              type="text"
+              v-model="restorationStore.album"
+              class="w-full p-2 border border-light-text dark:border-dark-text rounded bg-light-bg text-light-text dark:bg-dark-bg dark:text-dark-text"
+              placeholder="Введите альбом"
+            />
+          </div>
+        </div>
+        <div class="flex flex-col">
+          <div class="mb-6">
+            <h2 class="text-xl mb-2 text-light-text dark:text-dark-text">Год</h2>
+            <input
+              type="text"
+              v-model="restorationStore.year"
+              class="w-full p-2 border border-light-text dark:border-dark-text rounded bg-light-bg text-light-text dark:bg-dark-bg dark:text-dark-text"
+              placeholder="Введите год"
+            />
+          </div>
+          <div class="mb-6">
+            <h2 class="text-xl mb-2 text-light-text dark:text-dark-text">Страна</h2>
+            <input
+              type="text"
+              v-model="restorationStore.country"
+              class="w-full p-2 border border-light-text dark:border-dark-text rounded bg-light-bg text-light-text dark:bg-dark-bg dark:text-dark-text"
+              placeholder="Введите страну"
             />
           </div>
         </div>

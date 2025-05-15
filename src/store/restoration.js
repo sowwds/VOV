@@ -6,6 +6,9 @@ export const useRestorationStore = defineStore('restoration', {
     files: [],
     title: '',
     author: '',
+    year: '',
+    album: '',
+    country: '',
     coverFile: null,
     restoredAudioUrl: '',
   }),
@@ -22,6 +25,15 @@ export const useRestorationStore = defineStore('restoration', {
     setAuthor(author) {
       this.author = author;
     },
+    setYear(year) {
+      this.year = year;
+    },
+    setAlbum(album) {
+      this.album = album;
+    },
+    setCountry(country) {
+      this.country = country;
+    },
     setCoverFile(file) {
       this.coverFile = file;
     },
@@ -33,6 +45,9 @@ export const useRestorationStore = defineStore('restoration', {
       this.files = [];
       this.title = '';
       this.author = '';
+      this.year = '';
+      this.album = '';
+      this.country = '';
       this.coverFile = null;
       this.restoredAudioUrl = '';
     },
