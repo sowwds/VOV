@@ -16,12 +16,26 @@ defineProps({
 
 const restorationStore = useRestorationStore();
 const isDragging = ref(false);
+const coverError = ref('');
 
-watch(() => restorationStore.title, (newTitle) => {
-  restorationStore.setTitle(newTitle);
-});
-watch(() => restorationStore.author, (newAuthor) => {
-  restorationStore.setAuthor(newAuthor);
+// Проверка файла обложки на формат и размер
+const validateCoverFile = (file) => {
+  const maxSizeMB = 5;
+  const maxSizeBytes = maxSizeMB * 1024 * 1024; // 5 MB в байтах
+  const allowedType = 'image/png'; // MIME-тип для PNG
+
+  if (file.type !== allowedType) {
+    return 'Файл должен быть в формате PNG.';
+  }
+  if (file.size > maxSizeBytes) {
+    return `Файл должен быть меньше ${maxSizeMB} МБ.`;
+  }
+  return '';
+};
+
+// Проверка, есть ли валидный файл обложки (опционально, так как обложка не обязательна)
+const hasValidCover = computed(() => {
+  return !restorationStore.coverFile || !coverError.value;
 });
 
 const coverPreview = computed(() => restorationStore.coverFile ? URL.createObjectURL(restorationStore.coverFile) : null);
@@ -40,19 +54,32 @@ const onDrop = (event) => {
   isDragging.value = false;
   const files = event.dataTransfer.files;
   if (files.length) {
-    restorationStore.setCoverFile(files[0]);
+    const file = files[0];
+    coverError.value = validateCoverFile(file);
+    if (!coverError.value) {
+      restorationStore.setCoverFile(file);
+    } else {
+      restorationStore.setCoverFile(null); // Сбрасываем обложку, если есть ошибка
+    }
   }
 };
 
 const onCoverSelect = (event) => {
   const file = event.target.files[0];
   if (file) {
-    restorationStore.setCoverFile(file);
+    coverError.value = validateCoverFile(file);
+    if (!coverError.value) {
+      restorationStore.setCoverFile(file);
+    } else {
+      restorationStore.setCoverFile(null); // Сбрасываем обложку, если есть ошибка
+    }
   }
 };
 
 const goToNext = () => {
-  restorationStore.setCurrentStep(5);
+  if (hasValidCover.value) {
+    restorationStore.setCurrentStep(5);
+  }
 };
 </script>
 
@@ -90,8 +117,14 @@ const goToNext = () => {
             </div>
             <label class="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-light-secondary hover:bg-light-primary text-white px-2 py-1 rounded dark:bg-dark-secondary dark:hover:bg-dark-primary cursor-pointer text-sm">
               <span>Выбрать</span>
-              <input type="file" accept="image/*" @change="onCoverSelect" class="hidden" />
+              <input type="file" accept="image/png" @change="onCoverSelect" class="hidden" />
             </label>
+          </div>
+          <div v-if="coverError" class="mt-2 text-sm text-red-500">
+            {{ coverError }}
+          </div>
+          <div v-else-if="restorationStore.coverFile" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Файл выбран
           </div>
         </div>
         <div class="flex flex-col">
