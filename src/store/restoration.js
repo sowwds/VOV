@@ -1,20 +1,24 @@
 import { defineStore } from 'pinia';
+import jsmediatags from 'jsmediatags';
 
 export const useRestorationStore = defineStore('restoration', {
   state: () => ({
     currentStep: 1,
-    files: [],
+    file: null,
     title: '',
     author: '',
-    coverFile: null,
+    year: '',
+    album: '',
+    country: '',
+    coverUrl: null,
     restoredAudioUrl: '',
   }),
   actions: {
     setCurrentStep(step) {
       this.currentStep = step;
     },
-    setFiles(files) {
-      this.files = files;
+    setFile(file) {
+      this.file = file;
     },
     setTitle(title) {
       this.title = title;
@@ -22,18 +26,60 @@ export const useRestorationStore = defineStore('restoration', {
     setAuthor(author) {
       this.author = author;
     },
-    setCoverFile(file) {
-      this.coverFile = file;
+    setYear(year) {
+      this.year = year;
+    },
+    setAlbum(album) {
+      this.album = album;
+    },
+    setCountry(country) {
+      this.country = country;
+    },
+    setCoverUrl(url) {
+      this.coverUrl = url;
     },
     setRestoredAudioUrl(url) {
       this.restoredAudioUrl = url;
     },
+    async parseAudioMetadata(file) {
+      if (!file) return;
+      try {
+        const tags = await new Promise((resolve, reject) => {
+          jsmediatags.read(file, {
+            onSuccess: (tag) => resolve(tag.tags),
+            onError: (error) => reject(error),
+          });
+        });
+        this.setTitle(tags.title || '');
+        this.setAuthor(tags.artist || '');
+        this.setYear(tags.year || '');
+        this.setAlbum(tags.album || '');
+        if (tags.picture) {
+          const base64String = btoa(
+            String.fromCharCode(...new Uint8Array(tags.picture.data))
+          );
+          this.setCoverUrl(`data:${tags.picture.format};base64,${base64String}`);
+        } else {
+          this.setCoverUrl(null);
+        }
+      } catch (error) {
+        console.error('Ошибка парсинга метаданных:', error);
+        this.setTitle('');
+        this.setAuthor('');
+        this.setYear('');
+        this.setAlbum('');
+        this.setCoverUrl(null);
+      }
+    },
     reset() {
       this.currentStep = 1;
-      this.files = [];
+      this.file = null;
       this.title = '';
       this.author = '';
-      this.coverFile = null;
+      this.year = '';
+      this.album = '';
+      this.country = '';
+      this.coverUrl = null;
       this.restoredAudioUrl = '';
     },
   },

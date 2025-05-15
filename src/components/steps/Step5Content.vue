@@ -19,7 +19,10 @@ const restorationStore = useRestorationStore();
 const metadata = computed(() => ({
   title: restorationStore.title || 'Sample Title',
   author: restorationStore.author || 'Sample Author',
-  cover: restorationStore.coverFile ? URL.createObjectURL(restorationStore.coverFile) : 'https://via.placeholder.com/150',
+  year: restorationStore.year || 'Не указан',
+  album: restorationStore.album || 'Не указан',
+  country: restorationStore.country || 'Не указана',
+  cover: restorationStore.coverUrl || 'https://via.placeholder.com/150',
   restoredAudioUrl: restorationStore.restoredAudioUrl || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
 }));
 
@@ -59,6 +62,18 @@ const restart = () => {
           <div class="flex flex-row">
             <p class="text-lg text-light-text-muted dark:text-dark-text-muted mr-4">Автор:</p>
             <p class="text-lg text-light-text dark:text-dark-text">{{ metadata.author }}</p>
+          </div>
+          <div class="flex flex-row">
+            <p class="text-lg text-light-text-muted dark:text-dark-text-muted mr-4">Год:</p>
+            <p class="text-lg text-light-text dark:text-dark-text">{{ metadata.year }}</p>
+          </div>
+          <div class="flex flex-row">
+            <p class="text-lg text-light-text-muted dark:text-dark-text-muted mr-4">Альбом:</p>
+            <p class="text-lg text-light-text dark:text-dark-text">{{ metadata.album }}</p>
+          </div>
+          <div class="flex flex-row">
+            <p class="text-lg text-light-text-muted dark:text-dark-text-muted mr-4">Страна:</p>
+            <p class="text-lg text-light-text dark:text-dark-text">{{ metadata.country }}</p>
           </div>
         </div>
       </div>
