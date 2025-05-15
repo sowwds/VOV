@@ -2,6 +2,17 @@
 import { ref, computed } from 'vue';
 import { useRestorationStore } from '@/store/restoration';
 
+defineProps({
+  goToPreviousStep: {
+    type: Function,
+    default: () => {},
+  },
+  showBackButton: {
+    type: Boolean,
+    default: false,
+  },
+});
+
 const restorationStore = useRestorationStore();
 const isRestored = ref(false);
 
