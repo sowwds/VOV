@@ -81,6 +81,8 @@ const showMenu = ref(false)
 const menuRef = ref(null)
 const menuTimeout = ref(null)
 
+
+
 const isCurrent = computed(() => player.currentTrack === props.track.id)
 const isPlaying = computed(() => player.isPlaying && isCurrent.value)
 
