@@ -15,6 +15,8 @@ export const usePlayerStore = defineStore('player', () => {
     const loopMode = ref('none') // 'none' | 'all' | 'one'
     const shuffleActive = ref(false)
 
+    const audioElement = ref(null)
+
     // Вычисляем индекс текущего трека в очереди
     const currentIndex = computed(() =>
         queue.value.findIndex(id => id === currentTrack.value)
@@ -40,6 +42,12 @@ export const usePlayerStore = defineStore('player', () => {
             avatarUrl: getTrackAvatar(track)
         } : null
     })
+
+    // Установить <audio> элемент
+    function setAudioElement(element) {
+        audioElement.value = element
+    }
+
 
     // Добавить трек в коллекцию
     function addTrack(track) {
@@ -205,6 +213,7 @@ export const usePlayerStore = defineStore('player', () => {
         isPlaying,
         loopMode,
         shuffleActive,
+        audioElement,
 
         // getters
         currentTrackObj,
@@ -215,6 +224,7 @@ export const usePlayerStore = defineStore('player', () => {
         addTrack,
         addTracks,
         setCurrentTrack,
+        setAudioElement,
         playTrack,
         play,
         pause,

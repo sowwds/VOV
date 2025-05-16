@@ -1,6 +1,8 @@
 <template>
   <div class="flex h-screen overflow-hidden flex-col">
 
+    <AudioVisualizer />
+
     <Header @toggleDrawer="toggleDrawer" :drawerOpen="drawerOpen" />
     <!-- Mobile overlay -->
     <transition name="fade">
@@ -74,7 +76,7 @@
 
       <!-- Page content with larger padding -->
       <main
-          class="pt-16 flex-1 overflow-auto bg-light-bg dark:bg-dark-bg
+          class="pt-16 flex-1 overflow-auto
           px-8 md:px-12 lg:px-16 pb-6 transition-all duration-500"
           :class="{ 'md:pl-16': drawerOpen }"
           @click="closeSidebarOnMobile"
@@ -96,6 +98,7 @@ import { ref } from 'vue'
 import Sidebar from '@/components/Sidebar/Sidebar.vue'
 import MusicBar from '@/components/Music/MusicBar.vue'
 import Header from "@/components/Header/Header.vue";
+import AudioVisualizer from "@/components/AudioVisualizer/AudioVisualizer.vue";
 
 const drawerOpen = ref(false)
 
