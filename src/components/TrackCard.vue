@@ -42,7 +42,7 @@
     <div
         v-show="showMenu"
         ref="menuRef"
-        class="absolute left-full top-1/2 transform -translate-y-1/2 z-50"
+        class="absolute left-full top-1/2 transform -translate-y-1/2 z-100"
         @mouseleave="closeMenuWithDelay"
     >
       <div class="bg-white dark:bg-dark-surface shadow-xl rounded-md w-40 overflow-hidden">
