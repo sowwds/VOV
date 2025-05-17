@@ -3,8 +3,10 @@
   <div class="fixed bg-[#fafafc] dark:bg-[#17181c] inset-0 -z-10 overflow-hidden">
     <canvas
         ref="canvas"
-        class="w-full h-full blur-[3px]"
-        :class="{'opacity-50': isContentPage}"
+        class="w-full h-full blur-[3px] transition-opacity duration-300"
+        :class="{'opacity-50': isContentPage,
+        'opacity-0': !isVisualizerActive
+        }"
     ></canvas>
   </div>
 </template>
@@ -14,20 +16,27 @@ import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
 import { usePlayerStore } from '@/store/player';
 import { useRoute } from 'vue-router';
 
+
 const playerStore = usePlayerStore();
 const isPlaying = computed(() => playerStore.isPlaying);
 const audioElement = computed(() => playerStore.audioElement);
 const route = useRoute();
 
+
+
 const isContentPage = computed(() => route.path !== '/');
 
 const canvas = ref(null);
+const isVisualizerActive = ref(false);
 let context = null;
+let shouldRedrawBackground = ref(true);
+
 let audioContext = null;
 let analyser = null;
 let audioSrc = null;
 let analyserBufferLength = null;
 let dataArray = null;
+
 
 let w, h, center2D;
 const fov = 250;
@@ -82,6 +91,45 @@ const audioSetup = () => {
     return false;
   }
 };
+
+
+const initCanvas = () => {
+  if (!canvas.value) return;
+
+  context = canvas.value.getContext('2d', { willReadFrequently: true });
+  updateCanvasBackground();
+  isVisualizerActive.value = true;
+};
+
+const updateCanvasBackground = () => {
+  if (!context || !canvas.value) return;
+
+  const isDark = document.documentElement.classList.contains('dark');
+  context.fillStyle = isDark ? '#17181c' : '#fafafc';
+  context.fillRect(0, 0, canvas.value.width, canvas.value.height);
+  shouldRedrawBackground.value = false;
+};
+
+const observeThemeChanges = () => {
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.attributeName === 'class') {
+        shouldRedrawBackground.value = true;
+        if (!playerStore.isPlaying) {
+          updateCanvasBackground();
+        }
+      }
+    });
+  });
+
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class']
+  });
+
+  return observer;
+};
+
 
 const clearCanvas = () => {
   if (context) {
@@ -156,6 +204,10 @@ const mouseLeaveHandler = () => {
 };
 
 const render = () => {
+  if (shouldRedrawBackground.value) {
+    updateCanvasBackground();
+  }
+
   if (!analyser || !dataArray || audioContext?.state === 'closed') {
     console.warn('Analyser not initialized or audioContext closed');
     return;
@@ -267,6 +319,15 @@ const animate = (currentTime) => {
   render();
   animationFrameId = requestAnimationFrame(animate);
 };
+
+onMounted(() => {
+  initCanvas();
+  const observer = observeThemeChanges();
+
+  onUnmounted(() => {
+    observer.disconnect();
+  });
+});
 
 onMounted(() => {
   try {
