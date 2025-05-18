@@ -1,16 +1,16 @@
 // src/store/track.js
 import { defineStore } from 'pinia';
-import { trackService }     from '@/services/trackService';
-import { useAuthStore }     from '@/store/auth';
-import { usePlayerStore }   from '@/store/player';
+import { trackService }   from '@/services/trackService';
+import { useAuthStore }   from '@/store/auth';
+import { usePlayerStore } from '@/store/player';
 
 export const useTrackStore = defineStore('track', {
     state: () => ({
-        topPlays:     [],
-        topLikes:     [],
-        newTracks:    [],
-        userLibrary:  [],
-        searchResults:[],
+        topPlays:      [],
+        topLikes:      [],
+        newTracks:     [],
+        userLibrary:   [],
+        searchResults: [],
     }),
 
     actions: {
@@ -47,15 +47,23 @@ export const useTrackStore = defineStore('track', {
             this.searchResults = await trackService.searchTracks(query);
         },
 
-        async addToLibrary(trackid) {
+        /**
+         * Добавляем трек в библиотеку
+         * @param {string} trackId
+         */
+        async addToLibrary(trackId) {
             const auth = useAuthStore();
             if (!auth.userId) throw new Error('Not logged in');
-            await trackService.addToLibrary(auth.userId, trackid);
+            await trackService.addToLibrary(auth.userId, trackId);
             await this.fetchUserLibrary();
         },
 
-        async playTrack(trackid) {
-            await usePlayerStore().playTrack(trackid);
+        /**
+         * Воспроизводим трек через playerStore
+         * @param {string} trackId
+         */
+        async playTrack(trackId) {
+            await usePlayerStore().playTrack(trackId);
         },
 
         stopTrack() {
