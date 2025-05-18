@@ -21,7 +21,7 @@ const authStore = useAuthStore();
 const error = ref('');
 
 onMounted(async () => {
-  await authStore.initialize(); // Инициализация authStore
+  await authStore.initialize();
 });
 
 const metadata = computed(() => ({
@@ -55,6 +55,40 @@ const addToCollection = async () => {
   } catch (err) {
     console.error('Failed to add to collection:', err);
     error.value = 'Не удалось добавить трек в коллекцию.';
+  }
+};
+
+const publishTrack = async () => {
+  if (!restorationStore.trackId) {
+    error.value = 'ID трека отсутствует.';
+    return;
+  }
+
+  try {
+    await axios.post('http://localhost:5000/public-library', {
+      trackId: restorationStore.trackId,
+    }, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('jwt')}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    alert('Трек опубликован!');
+  } catch (err) {
+    console.error('Failed to publish track:', err);
+    if (err.response) {
+      if (err.response.status === 400) {
+        error.value = 'Ошибка: отсутствует ID трека или метаданные не найдены.';
+      } else if (err.response.status === 409) {
+        error.value = 'Трек уже опубликован.';
+      } else if (err.response.status === 500) {
+        error.value = 'Внутренняя ошибка сервера. Попробуйте позже.';
+      } else {
+        error.value = 'Не удалось опубликовать трек.';
+      }
+    } else {
+      error.value = 'Не удалось опубликовать трек. Проверьте соединение.';
+    }
   }
 };
 
@@ -113,7 +147,7 @@ const restart = () => {
         </div>
       </div>
       <audio :src="metadata.streamUrl" controls class="w-full mb-4"></audio>
-      <div class="flex justify-center gap-3">
+      <div class="flex justify-center gap-3 flex-wrap">
         <button
           class="px-4 py-2 rounded bg-light-primary dark:bg-dark-primary text-dark-text hover:bg-light-secondary dark:hover:bg-dark-secondary"
           @click="downloadAudio"
@@ -125,6 +159,12 @@ const restart = () => {
           @click="addToCollection"
         >
           Добавить в коллекцию
+        </button>
+        <button
+          class="px-4 py-2 rounded bg-light-primary dark:bg-dark-primary text-dark-text hover:bg-light-secondary dark:hover:bg-dark-secondary"
+          @click="publishTrack"
+        >
+          Опубликовать
         </button>
         <button
           class="px-4 py-2 rounded bg-gray-300 dark:bg-gray-600 text-dark-text hover:bg-gray-400 dark:hover:bg-gray-500"
