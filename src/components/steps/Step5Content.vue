@@ -22,7 +22,6 @@ const error = ref('');
 
 onMounted(async () => {
   await authStore.initialize(); // Инициализация authStore
-  fetchRestoredAudioUrl();
 });
 
 const metadata = computed(() => ({
@@ -32,26 +31,9 @@ const metadata = computed(() => ({
   album: restorationStore.album || 'Не указан',
   country: restorationStore.country || 'Не указана',
   cover: restorationStore.coverUrl || 'https://via.placeholder.com/150',
-  restoredAudioUrl: restorationStore.restoredAudioUrl || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+  streamUrl: restorationStore.trackId ? `http://localhost:5000/restoration/stream/${restorationStore.trackId}` : 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+  downloadUrl: restorationStore.trackId ? `http://localhost:5000/restoration/download/${restorationStore.trackId}` : null,
 }));
-
-const fetchRestoredAudioUrl = async () => {
-  try {
-    const response = await axios.get(`http://localhost:5000/restoration/download/${restorationStore.trackId}?version=original`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('jwt')}`,
-      },
-      params: {
-        version: 'processed',
-      },
-    });
-    console.log(response.data.url)
-    restorationStore.setRestoredAudioUrl(response.data.url);
-  } catch (err) {
-    console.error('Failed to fetch restored audio URL:', err);
-    error.value = 'Не удалось загрузить трек.';
-  }
-};
 
 const addToCollection = async () => {
   if (!authStore.user || !authStore.user.id) {
@@ -61,7 +43,7 @@ const addToCollection = async () => {
 
   try {
     await axios.post('http://localhost:5000/users/library', {
-      userId: parseInt(authStore.user.id), // Используем user.id
+      userId: parseInt(authStore.user.id),
       trackId: restorationStore.trackId,
     }, {
       headers: {
@@ -76,11 +58,11 @@ const addToCollection = async () => {
   }
 };
 
-const downloadAudio = async () => {
-  if (restorationStore.restoredAudioUrl) {
-    window.open(restorationStore.restoredAudioUrl, '_blank');
+const downloadAudio = () => {
+  if (metadata.value.downloadUrl) {
+    window.open(metadata.value.downloadUrl, '_blank');
   } else {
-    error.value = 'URL трека недоступен.';
+    error.value = 'URL для скачивания недоступен.';
   }
 };
 
@@ -130,7 +112,7 @@ const restart = () => {
           </div>
         </div>
       </div>
-      <audio :src="metadata.restoredAudioUrl" controls class="w-full mb-4"></audio>
+      <audio :src="metadata.streamUrl" controls class="w-full mb-4"></audio>
       <div class="flex justify-center gap-3">
         <button
           class="px-4 py-2 rounded bg-light-primary dark:bg-dark-primary text-dark-text hover:bg-light-secondary dark:hover:bg-dark-secondary"
