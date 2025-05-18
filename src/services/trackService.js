@@ -1,59 +1,58 @@
 import api from '@/services/api';
 
-// Сервис для работы с треками и библиотекой
+
+function normalize(raw) {
+    return {
+        trackid:   raw.trackid,
+        title:     raw.title,
+        author:    raw.author,
+        album:     raw.album,
+        year:      raw.year,
+        country:   raw.country,
+        coverurl:  raw.coverurl,
+        likes:     raw.likes,
+        playcount: raw.playcount,
+    };
+}
+
 export const trackService = {
-    // Получить топ треков по прослушиваниям
     async getTopPlays(limit = 10) {
-        const response = await api.get('/public-library/top-plays', { params: { limit } });
-        return response.data.tracks;
+        const { data } = await api.get('/public-library/top-plays', { params: { limit } });
+        return data.tracks.map(normalize);
     },
 
-    // Получить топ треков по лайкам
     async getTopLikes(limit = 10) {
-        const response = await api.get('/public-library/top-likes', { params: { limit } });
-        return response.data.tracks;
+        const { data } = await api.get('/public-library/top-likes', { params: { limit } });
+        return data.tracks.map(normalize);
     },
 
-    // Получить новые треки
     async getNewTracks(limit = 10) {
-        const response = await api.get('/public-library', { params: { limit } });
-        return response.data.tracks;
+        const { data } = await api.get('/public-library', { params: { limit } });
+        return data.tracks.map(normalize);
     },
 
-    // Поиск треков
     async searchTracks(query, limit = 10) {
         if (!query.trim()) return [];
-        const response = await api.get('/public-library', { params: { search: query, limit } });
-        return response.data.tracks;
+        const { data } = await api.get('/public-library', { params: { search: query, limit } });
+        return data.tracks.map(normalize);
     },
 
-    // Получить пользовательскую библиотеку
     async getUserLibrary(userId) {
-        const response = await api.post('/users/library/list', { userId });
-        return response.data.tracks;
+        const { data } = await api.post('/users/library/list', { userId });
+        return data.tracks.map(normalize);
     },
 
-    // Добавить трек в пользовательскую библиотеку
-    async addToLibrary(userId, trackId) {
-        const response = await api.post('/user/library/add', { userId, trackId });
-        return response.data;
+    async addToLibrary(userId, trackid) {
+        return api.post('/user/library/add', { userId, trackid });
     },
 
-    // Проверить, находится ли трек в библиотеке пользователя
-    async isTrackInLibrary(userId, trackId) {
-        const library = await this.getUserLibrary(userId);
-        return library.some(track => track.trackId === trackId);
+    async getTrackMetadata(trackid) {
+        const { data } = await api.get(`/public-library/${trackid}`);
+        return normalize(data);
     },
 
-    // Получить метаданные трека
-    async getTrackMetadata(trackId) {
-        const response = await api.get(`/public-library/${trackId}`);
-        return response.data;
-    },
-
-    // Получить URL для стриминга трека
-    getStreamUrl(trackId, version = 'processed') {
-        return `/tracks/${trackId}/stream?version=${version}`;
+    getStreamUrl(trackid, version = 'processed') {
+        return `http://localhost:5000/restoration/stream/${trackid}?version=${version}`;
     },
 
     // Получить подписанную ссылку для скачивания

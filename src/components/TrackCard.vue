@@ -6,7 +6,7 @@
     <!-- Обложка -->
     <div class="w-full aspect-square overflow-hidden rounded">
       <img
-          :src="track.coverUrl || defaultCover"
+          :src="track.coverurl || defaultCover"
           :alt="track.title || 'Трек'"
           class="w-full h-full object-cover"
       />
@@ -15,7 +15,7 @@
     <!-- Overlay -->
     <div
         class="absolute inset-0 rounded opacity-0 group-hover:opacity-60 flex items-center justify-evenly
-         bg-black transition-opacity duration-200 z-10"
+             bg-black transition-opacity duration-200 z-10"
     >
       <!-- Play/Pause -->
       <button
@@ -33,8 +33,14 @@
             @mouseenter="openMenu"
             class="p-1 hover:scale-110 text-white transition-transform duration-200"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
+          <!-- три точки -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+               fill="currentColor" viewBox="0 0 16 16">
+            <path
+                d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0
+                 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3
+                 1.5 1.5 0 0 1 0 3z"
+            />
           </svg>
         </button>
       </div>
@@ -62,7 +68,7 @@
           Добавить в очередь
         </button>
         <button
-            @click="$emit('add-to-library', track.trackId)"
+            @click="$emit('add-to-library', track.trackid)"
             class="block w-full text-left px-4 py-2 text-sm text-light-text dark:text-dark-text hover:bg-light-primary dark:hover:bg-dark-primary transition-colors"
         >
           Добавить в коллекцию
@@ -84,159 +90,112 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { usePlayerStore } from '@/store/player';
-import { PlayIcon, PauseIcon } from '@heroicons/vue/24/outline';
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { usePlayerStore } from '@/store/player'
+import { PlayIcon, PauseIcon } from '@heroicons/vue/24/outline'
 
-defineProps({ track: { type: Object, required: true } });
-defineEmits(['add-to-library']);
+// принимаем track с малыми буквами в свойствах
+const props = defineProps({
+  track: { type: Object, required: true }
+})
+defineEmits(['add-to-library'])
 
-const player = usePlayerStore();
-const showMenu = ref(false);
-const menuRef = ref(null);
-const triggerRef = ref(null);
-const menuTimeout = ref(null);
+const player = usePlayerStore()
 
-// Заглушка для обложки
-const defaultCover = 'https://via.placeholder.com/256';
+const showMenu = ref(false)
+const menuRef = ref(null)
+const triggerRef = ref(null)
+let menuTimeout = null
 
-const isCurrent = computed(() => player.currentTrack?.trackId === track.trackId);
-const isPlaying = computed(() => player.isPlaying && isCurrent.value);
+const defaultCover = 'https://via.placeholder.com/256'
+
+// флаг, текущий ли это трек
+const isCurrent = computed(() => player.currentTrackId === props.track.trackid)
+const isPlaying = computed(() => player.isPlaying && isCurrent.value)
 
 function onPlay() {
+  if (!props.track.trackid) return
   if (!isCurrent.value) {
-    player.playTrack(track.trackId);
+    player.playTrack(props.track.trackid)
   } else {
-    player.togglePlay();
+    player.togglePlay()
   }
 }
 
 function openMenu() {
-  clearTimeout(menuTimeout.value);
-  showMenu.value = true;
+  clearTimeout(menuTimeout)
+  showMenu.value = true
 }
-
 function closeMenu() {
-  showMenu.value = false;
+  showMenu.value = false
 }
-
+function closeMenuWithDelay() {
+  menuTimeout = setTimeout(closeMenu, 200)
+}
 function handleCardMouseLeave(e) {
-  if (!menuRef.value || !menuRef.value.contains(e.relatedTarget)) {
-    closeMenu();
+  if (!menuRef.value?.contains(e.relatedTarget)) closeMenu()
+}
+function handleClickOutside(e) {
+  if (
+      showMenu.value &&
+      !menuRef.value?.contains(e.target) &&
+      !triggerRef.value?.contains(e.target)
+  ) {
+    closeMenu()
   }
 }
 
 function addToQueue() {
-  player.enqueue(track.trackId);
-  closeMenu();
+  if (props.track.trackid) {
+    player.enqueue(props.track.trackid)
+    closeMenu()
+  }
 }
-
 function addNext() {
-  player.enqueueNext(track.trackId);
-  closeMenu();
-}
-
-function handleClickOutside(e) {
-  if (menuRef.value && !menuRef.value.contains(e.target) && triggerRef.value && !triggerRef.value.contains(e.target)) {
-    closeMenu();
+  if (props.track.trackid) {
+    player.enqueueNext(props.track.trackid)
+    closeMenu()
   }
 }
 
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside);
-});
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside);
-  clearTimeout(menuTimeout.value);
-});
-
-const windowWidth = ref(window.innerWidth);
-const windowHeight = ref(window.innerHeight);
-
-const toggleMenu = () => {
-  showMenu.value = !showMenu.value;
-};
-
-const closeMenuWithDelay = () => {
-  menuTimeout.value = setTimeout(() => {
-    showMenu.value = false;
-  }, 200);
-};
-
-const updateWindowSize = () => {
-  windowWidth.value = window.innerWidth;
-  windowHeight.value = window.innerHeight;
-};
+const windowWidth = ref(window.innerWidth)
+const windowHeight = ref(window.innerHeight)
 
 const menuPosition = computed(() => {
-  if (!triggerRef.value || !menuRef.value || !showMenu.value) return {};
-
-  const triggerRect = triggerRef.value.getBoundingClientRect();
-  const menuWidth = 160;
-  const menuHeight = 120; // Учли новую кнопку
-  const padding = 8;
-  const offset = 4;
-
-  const rightSpace = windowWidth.value - triggerRect.right;
-  const showOnRight = rightSpace >= menuWidth + padding;
-
-  const bottomSpace = windowHeight.value - triggerRect.bottom;
-  const showOnBottom = bottomSpace >= menuHeight + padding + offset;
-
-  let left;
-  if (showOnRight) {
-    left = triggerRect.left;
-  } else {
-    left = triggerRect.right - menuWidth;
-    if (left < padding) {
-      left = padding;
-    }
-  }
-
-  let top;
-  if (showOnBottom) {
-    top = triggerRect.bottom + offset;
-  } else {
-    top = triggerRect.top - menuHeight - offset;
-    if (top < padding) {
-      top = padding;
-    }
-  }
-
-  return {
-    left: `${left}px`,
-    top: `${top}px`,
-  };
-});
+  if (!triggerRef.value || !menuRef.value || !showMenu.value) return {}
+  const rect = triggerRef.value.getBoundingClientRect()
+  const menuW = 160, menuH = 120, pad = 8, off = 4
+  const right = windowWidth.value - rect.right >= menuW + pad
+  const bottom = windowHeight.value - rect.bottom >= menuH + pad + off
+  let left = right ? rect.left : Math.max(pad, rect.right - menuW)
+  let top  = bottom
+      ? rect.bottom + off
+      : Math.max(pad, rect.top - menuH - off)
+  return { left: `${left}px`, top: `${top}px` }
+})
 
 onMounted(() => {
-  window.addEventListener('resize', updateWindowSize);
-});
-
+  document.addEventListener('click', handleClickOutside)
+  window.addEventListener('resize', () => {
+    windowWidth.value = window.innerWidth
+    windowHeight.value = window.innerHeight
+  })
+})
 onUnmounted(() => {
-  window.removeEventListener('resize', updateWindowSize);
-});
+  document.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('resize', handleClickOutside)
+  clearTimeout(menuTimeout)
+})
 </script>
 
 <style scoped>
-.text-light-text-muted {
-  font-size: 0.875rem; /* Меньший шрифт для автора */
-  color: #6b7280; /* Muted цвет для светлой темы */
-}
-.dark .text-dark-text-muted {
-  color: #9ca3af; /* Muted цвет для тёмной темы */
-}
+.text-light-text-muted { font-size: .875rem; color: #6b7280; }
+.dark .text-dark-text-muted { color: #9ca3af; }
 
-/* Плавное появление/исчезновение меню */
-.v-enter-active,
-.v-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+.v-enter-active, .v-leave-active {
+  transition: opacity .2s, transform .2s;
 }
-
-.v-enter-from,
-.v-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
+.v-enter-from, .v-leave-to {
+  opacity: 0; transform: translateY(-10px);
 }
 </style>
