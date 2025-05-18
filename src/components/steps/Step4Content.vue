@@ -92,8 +92,33 @@ const onCoverSelect = (event) => {
   }
 };
 
+const blobToBase64 = async (blobUrl) => {
+  try {
+    const response = await fetch(blobUrl);
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error('Error converting blob to base64:', error);
+    return null;
+  }
+};
+
 const goToNext = async () => {
   if (hasValidCover.value) {
+    // Преобразуем coverUrl если это blob
+    let coverUrlToSend = restorationStore.coverUrl;
+    if (coverUrlToSend && coverUrlToSend.startsWith('blob:')) {
+      coverUrlToSend = await blobToBase64(coverUrlToSend);
+      if (!coverUrlToSend) {
+        submissionError.value = 'Не удалось обработать обложку';
+        return;
+      }
+    }
+
     const metadata = {
       trackId: restorationStore.trackId,
       title: restorationStore.title || 'Unknown Title',
@@ -101,7 +126,7 @@ const goToNext = async () => {
       year: restorationStore.year || '',
       album: restorationStore.album || '',
       country: restorationStore.country || '',
-      coverUrl: restorationStore.coverUrl || null,
+      coverUrl: coverUrlToSend || null, // Используем преобразованный URL
     };
 
     try {

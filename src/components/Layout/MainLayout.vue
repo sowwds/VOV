@@ -99,6 +99,7 @@ import Sidebar from '@/components/Sidebar/Sidebar.vue'
 import MusicBar from '@/components/Music/MusicBar.vue'
 import Header from "@/components/Header/Header.vue";
 import AudioVisualizer from "@/components/AudioVisualizer/AudioVisualizer.vue";
+import ZenitTracers from "@/components/AudioVisualizer/ZenitTracers.vue";
 
 const drawerOpen = ref(false)
 

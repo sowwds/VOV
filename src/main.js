@@ -5,11 +5,13 @@ import App from './App.vue'
 import '@/assets/input.css'   // подключение Tailwind
 import { useThemeStore, applyTheme } from '@/store/theme'
 import { useAuthStore } from '@/store/auth';
-
+import Toast from "vue-toastification";
+import "vue-toastification/dist/index.css";
 
 const app = createApp(App)
 const pinia = createPinia()
 
+app.use(Toast)
 app.use(pinia)
 app.use(router)
 

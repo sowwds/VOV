@@ -11,6 +11,7 @@ export const useAuthStore = defineStore('auth', {
     avatarUrl: (state) => state.user?.avatar_url || avatarPlaceholder,
     fullName: (state) => state.user?.name || 'Неизвестный пользователь',
     email: (state) => state.user?.email || 'user@example.com',
+    userId: (state) => state.user?.id || null,
     isAuthenticated: (state) => !!state.token && !!state.user,
   },
   actions: {

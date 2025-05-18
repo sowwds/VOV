@@ -1,4 +1,3 @@
-```vue
 <template>
   <div
       class="bg-light-surface dark:bg-dark-surface shadow-lg rounded p-3 overflow-visible group relative"
@@ -7,8 +6,8 @@
     <!-- Обложка -->
     <div class="w-full aspect-square overflow-hidden rounded">
       <img
-          :src="avatarUrl"
-          :alt="track.title"
+          :src="track.coverUrl || defaultCover"
+          :alt="track.title || 'Трек'"
           class="w-full h-full object-cover"
       />
     </div>
@@ -16,7 +15,7 @@
     <!-- Overlay -->
     <div
         class="absolute inset-0 rounded opacity-0 group-hover:opacity-60 flex items-center justify-evenly
-           bg-black transition-opacity duration-200 z-10"
+         bg-black transition-opacity duration-200 z-10"
     >
       <!-- Play/Pause -->
       <button
@@ -62,13 +61,24 @@
         >
           Добавить в очередь
         </button>
+        <button
+            @click="$emit('add-to-library', track.trackId)"
+            class="block w-full text-left px-4 py-2 text-sm text-light-text dark:text-dark-text hover:bg-light-primary dark:hover:bg-dark-primary transition-colors"
+        >
+          Добавить в коллекцию
+        </button>
       </div>
     </div>
 
     <!-- Title and artist -->
-    <div class="p-5">
-      <h3 class="text-light-text dark:text-dark-text text-lg truncate">{{ track.title }}</h3>
-      <p class="text-light-text-muted dark:text-dark-text-muted truncate">{{ track.artist }}</p>
+    <div class="p-3">
+      <h3 class="text-light-text dark:text-dark-text text-base font-semibold truncate">
+        {{ track.title || 'Без названия' }}
+      </h3>
+      <p class="text-light-text-muted dark:text-dark-text-muted text-sm truncate">
+        {{ track.author || 'Неизвестный исполнитель' }}
+        <span v-if="track.year"> - {{ track.year }}</span>
+      </p>
     </div>
   </div>
 </template>
@@ -76,22 +86,26 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { usePlayerStore } from '@/store/player';
-import { getTrackAvatar } from '@/services/avatarService.js';
 import { PlayIcon, PauseIcon } from '@heroicons/vue/24/outline';
 
-const props = defineProps({ track: { type: Object, required: true } });
+defineProps({ track: { type: Object, required: true } });
+defineEmits(['add-to-library']);
+
 const player = usePlayerStore();
 const showMenu = ref(false);
 const menuRef = ref(null);
 const triggerRef = ref(null);
 const menuTimeout = ref(null);
 
-const isCurrent = computed(() => player.currentTrack === props.track.id);
+// Заглушка для обложки
+const defaultCover = 'https://via.placeholder.com/256';
+
+const isCurrent = computed(() => player.currentTrack?.trackId === track.trackId);
 const isPlaying = computed(() => player.isPlaying && isCurrent.value);
 
 function onPlay() {
   if (!isCurrent.value) {
-    player.playTrack(props.track);
+    player.playTrack(track.trackId);
   } else {
     player.togglePlay();
   }
@@ -113,18 +127,15 @@ function handleCardMouseLeave(e) {
 }
 
 function addToQueue() {
-  player.enqueue(props.track);
+  player.enqueue(track.trackId);
   closeMenu();
 }
 
 function addNext() {
-  player.enqueueNext(props.track);
+  player.enqueueNext(track.trackId);
   closeMenu();
 }
 
-const avatarUrl = computed(() => getTrackAvatar(props.track));
-
-// Закрытие меню при клике вне его
 function handleClickOutside(e) {
   if (menuRef.value && !menuRef.value.contains(e.target) && triggerRef.value && !triggerRef.value.contains(e.target)) {
     closeMenu();
@@ -162,38 +173,32 @@ const menuPosition = computed(() => {
   if (!triggerRef.value || !menuRef.value || !showMenu.value) return {};
 
   const triggerRect = triggerRef.value.getBoundingClientRect();
-  const menuWidth = 160; // w-40 = 160px
-  const menuHeight = 80; // Примерная высота меню
-  const padding = 8; // Отступ от краёв экрана
-  const offset = 4; // Отступ от кнопки (пару пикселей)
+  const menuWidth = 160;
+  const menuHeight = 120; // Учли новую кнопку
+  const padding = 8;
+  const offset = 4;
 
-  // Проверяем, поместится ли меню справа
   const rightSpace = windowWidth.value - triggerRect.right;
   const showOnRight = rightSpace >= menuWidth + padding;
 
-  // Проверяем, поместится ли меню снизу
   const bottomSpace = windowHeight.value - triggerRect.bottom;
   const showOnBottom = bottomSpace >= menuHeight + padding + offset;
 
-  // Позиционирование по горизонтали
   let left;
   if (showOnRight) {
-    left = triggerRect.left; // Левый верхний угол меню под левым нижним углом кнопки
+    left = triggerRect.left;
   } else {
-    left = triggerRect.right - menuWidth; // Правый верхний угол меню под правым нижним углом кнопки
-    // Убедимся, что меню не уходит за левый край
+    left = triggerRect.right - menuWidth;
     if (left < padding) {
       left = padding;
     }
   }
 
-  // Позиционирование по вертикали
   let top;
   if (showOnBottom) {
-    top = triggerRect.bottom + offset; // Меню под кнопкой с отступом 4px
+    top = triggerRect.bottom + offset;
   } else {
-    top = triggerRect.top - menuHeight - offset; // Меню над кнопкой с отступом 4px
-    // Убедимся, что меню не уходит за верхний край
+    top = triggerRect.top - menuHeight - offset;
     if (top < padding) {
       top = padding;
     }
@@ -215,6 +220,14 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.text-light-text-muted {
+  font-size: 0.875rem; /* Меньший шрифт для автора */
+  color: #6b7280; /* Muted цвет для светлой темы */
+}
+.dark .text-dark-text-muted {
+  color: #9ca3af; /* Muted цвет для тёмной темы */
+}
+
 /* Плавное появление/исчезновение меню */
 .v-enter-active,
 .v-leave-active {
@@ -227,4 +240,3 @@ onUnmounted(() => {
   transform: translateY(-10px);
 }
 </style>
-```
