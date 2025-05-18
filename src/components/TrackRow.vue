@@ -3,20 +3,17 @@
       class="flex items-center p-2 bg-light-surface dark:bg-dark-surface rounded hover:bg-light-primary/10 dark:hover:bg-dark-primary/10 cursor-pointer"
       @click="playTrack"
   >
-    <!-- Обложка с оверлеем -->
+    <!-- Обложка -->
     <div class="relative w-16 h-16 mr-4">
       <img
-          :src="track.coverurl || defaultCover"
-          :alt="track.title || 'Трек'"
+          :src="track.coverUrl ? fullCoverUrl(track.coverUrl) : defaultCover"
+          :alt="track.title"
           class="w-full h-full object-cover rounded"
       />
       <div
           class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black bg-opacity-50 transition-opacity"
       >
-        <button
-            @click.stop="playTrack"
-            class="p-1 hover:scale-110 text-white transition-transform duration-200"
-        >
+        <button @click.stop="playTrack" class="p-1 hover:scale-110 text-white transition-transform duration-200">
           <component :is="isPlaying ? PauseIcon : PlayIcon" class="w-8 h-8" />
         </button>
       </div>
@@ -25,26 +22,25 @@
     <!-- Название и автор -->
     <div class="flex-1">
       <h4 class="text-light-text dark:text-dark-text text-sm font-semibold truncate">
-        {{ track.title || 'Без названия' }}
+        {{ track.title }}
       </h4>
       <p class="text-light-text-muted dark:text-dark-text-muted text-xs truncate">
-        {{ track.author || 'Неизвестный исполнитель' }}
-        <span v-if="track.year"> - {{ track.year }}</span>
+        {{ track.author }}<span v-if="track.year"> – {{ track.year }}</span>
       </p>
     </div>
 
-    <!-- Кнопки управления -->
+    <!-- Кнопки -->
     <div class="flex space-x-2">
-      <button
-          @click.stop="$emit('add-to-library', track.trackid)"
-          class="text-light-text dark:text-dark-text"
-      >
-        <HeartIcon class="w-5 h-5" :class="{ 'text-red-500': isInLibrary }" />
+      <!-- Добавить/убрать из библиотеки -->
+      <button @click.stop="onToggleLibrary" class="text-light-text dark:text-dark-text">
+        <HeartIcon :class="['w-5 h-5', isInLibrary ? 'text-red-500' : '']" />
       </button>
-      <button @click.stop="addToQueue" class="text-light-text dark:text-dark-text">
+      <!-- В очередь -->
+      <button @click.stop="enqueue" class="text-light-text dark:text-dark-text">
         <QueueListIcon class="w-5 h-5" />
       </button>
-      <button @click.stop="addNext" class="text-light-text dark:text-dark-text">
+      <!-- Следующим -->
+      <button @click.stop="enqueueNext" class="text-light-text dark:text-dark-text">
         <ArrowRightIcon class="w-5 h-5" />
       </button>
     </div>
@@ -52,7 +48,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { usePlayerStore } from '@/store/player'
 import { useTrackStore } from '@/store/track'
 import {
@@ -63,38 +59,70 @@ import {
   ArrowRightIcon,
 } from '@heroicons/vue/24/outline'
 
+// props
 const { track } = defineProps({
   track: { type: Object, required: true }
 })
-defineEmits(['add-to-library'])
 
-const player = usePlayerStore()
-const trackStore = useTrackStore()
+// сторы
+const playerStore = usePlayerStore()
+const trackStore  = useTrackStore()
 
-const defaultCover = 'https://via.placeholder.com/48'
+// локальное состояние: находится ли трек в библиотеке
+const isInLibrary = ref(false)
 
-// Сравниваем с полем currentTrackId
-const isCurrent = computed(() => player.currentTrackId === track.trackid)
-const isPlaying = computed(() => player.isPlaying && isCurrent.value)
-
-const isInLibrary = computed(() =>
-    trackStore.userLibrary.some(t => t.trackid === track.trackid)
+watch(
+    () => track.trackId,
+    async id => {
+      // при смене входного track.trackId проверяем
+      isInLibrary.value = trackStore.userLibrary.some(t => t.trackId === id)
+    },
+    { immediate: true }
 )
 
+// вычисляемые флаги для плеера
+const isCurrent = computed(() => playerStore.currentTrackId === track.trackId)
+const isPlaying = computed(() => playerStore.isPlaying && isCurrent.value)
+
+// дефолтная обложка
+const defaultCover = 'https://via.placeholder.com/48'
+
+// методы плеера
 function playTrack() {
   if (!isCurrent.value) {
-    player.playTrack(track.trackid)
+    playerStore.playTrack(track.trackId)
   } else {
-    player.togglePlay()
+    playerStore.togglePlay()
   }
 }
 
-function addToQueue() {
-  player.enqueue(track.trackid)
+function enqueue() {
+  playerStore.enqueue(track.trackId)
 }
 
-function addNext() {
-  player.enqueueNext(track.trackid)
+function enqueueNext() {
+  playerStore.enqueueNext(track.trackId)
+}
+
+// метод добавления/удаления из библиотеки
+async function onToggleLibrary() {
+  try {
+    if (isInLibrary.value) {
+      // можно реализовать удаление, если есть роут в API
+      // await trackStore.removeFromLibrary(track.trackId)
+    } else {
+      await trackStore.addToLibrary(track.trackId)
+    }
+    // обновляем флаг
+    isInLibrary.value = !isInLibrary.value
+  } catch (e) {
+    console.error('Не удалось обновить библиотеку:', e)
+  }
+}
+
+// собираем полный URL обложки из относительного пути
+function fullCoverUrl(path) {
+  return `${import.meta.env.VITE_S3_BASE_URL}/${path}`
 }
 </script>
 

@@ -6,7 +6,7 @@
     <!-- Обложка -->
     <div class="w-full aspect-square overflow-hidden rounded">
       <img
-          :src="track.coverurl || defaultCover"
+          :src="track.coverUrl || defaultCover"
           :alt="track.title || 'Трек'"
           class="w-full h-full object-cover"
       />
@@ -68,7 +68,7 @@
           Добавить в очередь
         </button>
         <button
-            @click="$emit('add-to-library', track.trackid)"
+            @click="$emit('add-to-library', track.trackId)"
             class="block w-full text-left px-4 py-2 text-sm text-light-text dark:text-dark-text hover:bg-light-primary dark:hover:bg-dark-primary transition-colors"
         >
           Добавить в коллекцию
@@ -94,7 +94,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { usePlayerStore } from '@/store/player'
 import { PlayIcon, PauseIcon } from '@heroicons/vue/24/outline'
 
-// принимаем track с малыми буквами в свойствах
+// принимаем track с camelCase полями
 const props = defineProps({
   track: { type: Object, required: true }
 })
@@ -110,13 +110,13 @@ let menuTimeout = null
 const defaultCover = 'https://via.placeholder.com/256'
 
 // флаг, текущий ли это трек
-const isCurrent = computed(() => player.currentTrackId === props.track.trackid)
+const isCurrent = computed(() => player.currentTrackId === props.track.trackId)
 const isPlaying = computed(() => player.isPlaying && isCurrent.value)
 
 function onPlay() {
-  if (!props.track.trackid) return
+  if (!props.track.trackId) return
   if (!isCurrent.value) {
-    player.playTrack(props.track.trackid)
+    player.playTrack(props.track.trackId)
   } else {
     player.togglePlay()
   }
@@ -146,14 +146,14 @@ function handleClickOutside(e) {
 }
 
 function addToQueue() {
-  if (props.track.trackid) {
-    player.enqueue(props.track.trackid)
+  if (props.track.trackId) {
+    player.enqueue(props.track.trackId)
     closeMenu()
   }
 }
 function addNext() {
-  if (props.track.trackid) {
-    player.enqueueNext(props.track.trackid)
+  if (props.track.trackId) {
+    player.enqueueNext(props.track.trackId)
     closeMenu()
   }
 }

@@ -1,17 +1,16 @@
 import api from '@/services/api';
 
-
 function normalize(raw) {
     return {
-        trackid:   raw.trackid,
+        trackId:   raw.trackid,    // здесь сохраняем из ответа поле trackid в trackId
         title:     raw.title,
         author:    raw.author,
         album:     raw.album,
         year:      raw.year,
         country:   raw.country,
-        coverurl:  raw.coverurl,
+        coverUrl:  raw.coverurl,
         likes:     raw.likes,
-        playcount: raw.playcount,
+        playCount: raw.playcount,
     };
 }
 
@@ -42,39 +41,38 @@ export const trackService = {
         return data.tracks.map(normalize);
     },
 
-    async addToLibrary(userId, trackid) {
-        return api.post('/user/library/add', { userId, trackid });
+    async addToLibrary(userId, trackId) {
+        // бекенд ждёт trackId
+        const { data } = await api.post('/users/library', { userId, trackId });
+        return data;
     },
 
-    async getTrackMetadata(trackid) {
-        const { data } = await api.get(`/public-library/${trackid}`);
+    async getTrackMetadata(trackId) {
+        const { data } = await api.get(`/public-library/${trackId}`);
         return normalize(data);
     },
 
-    getStreamUrl(trackid, version = 'processed') {
-        return `http://localhost:5000/restoration/stream/${trackid}?version=${version}`;
+    getStreamUrl(trackId, version = 'processed') {
+        return `http://localhost:5000/restoration/stream/${trackId}?version=${version}`;
     },
 
-    // Получить подписанную ссылку для скачивания
     async getDownloadUrl(trackId, version = 'processed') {
-        const response = await api.get(`/restoration/download/${trackId}`, { params: { version } });
-        return response.data.url;
+        const { data } = await api.get(`/restoration/download/${trackId}`, { params: { version } });
+        return data.url;
     },
 
-    // Загрузить аудиофайл
     async uploadTrack(userId, file) {
         const formData = new FormData();
         formData.append('userId', userId);
         formData.append('file', file);
-        const response = await api.post('/restoration/upload', formData, {
+        const { data } = await api.post('/restoration/upload', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
         });
-        return response.data.id;
+        return data.id;
     },
 
-    // Сохранить метаданные трека
     async saveMetadata(trackId, metadata) {
-        const response = await api.post('/restoration/metadata', { trackId, ...metadata });
-        return response.data.metadataId;
+        const { data } = await api.post('/restoration/metadata', { trackId, ...metadata });
+        return data.metadataId;
     },
 };

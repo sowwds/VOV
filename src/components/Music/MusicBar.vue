@@ -203,37 +203,42 @@
 </template>
 
 <script setup>
-import QueuePopOver                     from '@/components/Music/QueuePopOver.vue'
+import QueuePopOver from '@/components/Music/QueuePopOver.vue'
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
-import { usePlayerStore }               from '@/store/player'
-import { useTrackStore }                from '@/store/track'
-import { throttle }                     from 'lodash'
-import { trackService }                 from '@/services/trackService'
+import { usePlayerStore } from '@/store/player'
+import { useTrackStore } from '@/store/track'
+import { throttle } from 'lodash'
+import { trackService } from '@/services/trackService'
 import {
-  HeartIcon    as HeartOutline,
-  HeartIcon    as HeartSolid,
-  PlayIcon, PauseIcon,
-  ChevronLeftIcon, ChevronRightIcon,
+  HeartIcon as HeartOutline,
+  HeartIcon as HeartSolid,
+  PlayIcon,
+  PauseIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   ArrowPathRoundedSquareIcon,
-  MicrophoneIcon, ArrowsPointingOutIcon,
-  SpeakerWaveIcon, SpeakerXMarkIcon,
-  QueueListIcon, InformationCircleIcon
+  MicrophoneIcon,
+  ArrowsPointingOutIcon,
+  SpeakerWaveIcon,
+  SpeakerXMarkIcon,
+  QueueListIcon,
+  InformationCircleIcon
 } from '@heroicons/vue/24/outline'
 
 const playerStore = usePlayerStore()
-const trackStore  = useTrackStore()
+const trackStore = useTrackStore()
 
 // state & refs
-const audio          = ref(null)
-const currentTime    = ref(0)
-const duration       = ref(0)
-const volume         = ref(0.5)
-const isMuted        = ref(false)
+const audio = ref(null)
+const currentTime = ref(0)
+const duration = ref(0)
+const volume = ref(0.5)
+const isMuted = ref(false)
 const showVolumeHint = ref(false)
-const showQueue      = ref(false)
+const showQueue = ref(false)
 const currentVersion = ref('processed')
-const isInLibrary    = ref(false)
-const defaultCover   = 'https://via.placeholder.com/48'
+const isInLibrary = ref(false)
+const defaultCover = 'https://via.placeholder.com/48'
 
 // computed
 const currentTrack = computed(() => playerStore.currentTrack)
@@ -250,8 +255,10 @@ const loopClass = computed(() =>
 
 // watch library membership
 watch(
-    () => currentTrack.value?.trackid,
-    id => { isInLibrary.value = trackStore.userLibrary.some(t => t.trackid === id) },
+    () => currentTrack.value?.trackId,
+    (id) => {
+      isInLibrary.value = trackStore.userLibrary.some((t) => t.trackId === id)
+    },
     { immediate: true }
 )
 
@@ -271,37 +278,68 @@ onMounted(() => {
   audio.value.onended = () => {
     if (playerStore.loopMode !== 'one') playerStore.nextTrack()
   }
-  audio.value.onplay  = () => playerStore.isPlaying = true
-  audio.value.onpause = () => playerStore.isPlaying = false
+  audio.value.onplay = () => (playerStore.isPlaying = true)
+  audio.value.onpause = () => (playerStore.isPlaying = false)
 })
 
 // sync track src
 watch(
     () => playerStore.currentTrack,
-    track => {
+    (track) => {
       if (audio.value && track?.streamUrl) {
         audio.value.src = track.streamUrl
-        if (playerStore.isPlaying) audio.value.play().catch(()=>{})
+        if (playerStore.isPlaying) audio.value.play().catch(() => {})
       }
     },
     { deep: true }
 )
 
 // methods
-function onToggleLibrary()   { currentTrack.value?.trackid && trackStore.addToLibrary(currentTrack.value.trackid) }
-function onShuffle()          { playerStore.toggleShuffle() }
-function onPrev()             { playerStore.prevTrack() }
-function onTogglePlay()       { playerStore.isPlaying ? playerStore.pause() : playerStore.play() }
-function onNext()             { playerStore.nextTrack() }
-function onToggleLoop()       { playerStore.toggleLoopMode() }
-function onToggleVersion()    { currentVersion.value = currentVersion.value === 'processed' ? 'original' : 'processed' }
-function onToggleQueue()      { showQueue.value = !showQueue.value }
-function onSpeechToText()     { /* TODO */ }
-function onToggleFloat()      { /* TODO */ }
-function onSeek()             { audio.value.currentTime = currentTime.value }
-function onUpdateVolume()     { isMuted.value = volume.value === 0; audio.value.volume = volume.value }
-function onToggleMute()       { isMuted.value = !isMuted.value; audio.value.volume = isMuted.value ? 0 : volume.value }
-function formatTime(sec = 0)  {
+function onToggleLibrary() {
+  const id = currentTrack.value?.trackId
+  if (id) trackStore.addToLibrary(id)
+}
+function onShuffle() {
+  playerStore.toggleShuffle()
+}
+function onPrev() {
+  playerStore.prevTrack()
+}
+function onTogglePlay() {
+  playerStore.isPlaying ? playerStore.pause() : playerStore.play()
+}
+function onNext() {
+  playerStore.nextTrack()
+}
+function onToggleLoop() {
+  playerStore.toggleLoopMode()
+}
+function onToggleVersion() {
+  currentVersion.value =
+      currentVersion.value === 'processed' ? 'original' : 'processed'
+}
+function onToggleQueue() {
+  showQueue.value = !showQueue.value
+}
+function onSpeechToText() {
+  /* TODO */
+}
+function onToggleFloat() {
+  /* TODO */
+}
+function onSeek() {
+  if (audio.value) audio.value.currentTime = currentTime.value
+}
+function onUpdateVolume() {
+  isMuted.value = volume.value === 0
+  if (audio.value) audio.value.volume = volume.value
+}
+function onToggleMute() {
+  isMuted.value = !isMuted.value
+  if (audio.value)
+    audio.value.volume = isMuted.value ? 0 : volume.value
+}
+function formatTime(sec = 0) {
   const m = String(Math.floor(sec / 60)).padStart(2, '0')
   const s = String(Math.floor(sec % 60)).padStart(2, '0')
   return `${m}:${s}`
@@ -309,7 +347,7 @@ function formatTime(sec = 0)  {
 
 onUnmounted(() => {
   // отменяем throttle
-  audio.value && audio.value.ontimeupdate && throttle.cancel?.()
+  if (audio.value?.ontimeupdate) throttle.cancel?.()
 })
 </script>
 
