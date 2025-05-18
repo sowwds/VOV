@@ -1,32 +1,29 @@
-```vue
 <template>
   <div
-      class="bg-light-surface dark:bg-dark-surface border-t border-gray-200 dark:border-dark-border py-4 px-6 flex flex-wrap items-center justify-between h-20
-         gap-y-2 md:gap-y-0"
+      class="bg-light-surface dark:bg-dark-surface border-t border-gray-200 dark:border-dark-border py-4 px-6 flex flex-wrap items-center justify-between h-20 gap-y-2 md:gap-y-0"
   >
     <!-- ЛЕВАЯ СЕКЦИЯ: обложка + название + автор -->
     <div class="flex items-center space-x-3 w-1/4 min-w-[200px]">
       <img
-          :src="currentAvatar"
+          :src="currentTrack?.coverUrl || defaultCover"
           alt="Cover"
           class="w-12 h-12 object-cover rounded bg-gray-100 dark:bg-gray-700"
       />
       <div class="flex flex-col truncate">
         <p class="text-sm font-semibold text-light-text dark:text-dark-text truncate">
-          {{ trackTitle }}
+          {{ currentTrack?.title || 'Трек' }}
         </p>
         <p class="text-xs text-light-text-muted dark:text-dark-text-muted truncate">
-          {{ artistName }}
+          {{ currentTrack?.author || 'Исполнитель' }}
         </p>
       </div>
-      <!-- Лайк -->
+      <!-- Добавить в коллекцию -->
       <button
-          @click="toggleLike"
+          @click="toggleAddToLibrary"
           class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200"
       >
-        <component :is="isLiked ? HeartSolid : HeartOutline" class="w-5 h-5" />
+        <component :is="isInLibrary ? HeartSolid : HeartOutline" class="w-5 h-5" />
       </button>
-
       <button
           class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200"
       >
@@ -39,19 +36,29 @@
       <div class="flex items-center space-x-4">
         <!-- Shuffle -->
         <button
-            @click="toggleShuffle"
-            :class="shuffleActive ? 'text-light-primary dark:text-dark-primary' : 'text-light-text dark:text-dark-text'"
+            @click="playerStore.toggleShuffle"
+            :class="playerStore.shuffleActive ? 'text-light-primary dark:text-dark-primary' : 'text-light-text dark:text-dark-text'"
             class="p-2 rounded hover:scale-110 active:scale-95 transition-transform duration-200"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-5 h-5 bi bi-shuffle" viewBox="0 0 16 16">
-            <path fill-rule="evenodd" d="M0 3.5A.5.5 0 0 1 .5 3H1c2.202 0 3.827 1.24 4.874 2.418.49.552.865 1.102 1.126 1.532.26-.43.636-.98 1.126-1.532C9.173 4.24 10.798 3 13 3v1c-1.798 0-3.173 1.01-4.126 2.082A9.624 9.624 0 0 0 7.556 8a9.624 9.624 0 0 0 1.317 1.918C9.828 10.99 11.204 12 13 12v1c-2.202 0-3.827-1.24-4.874-2.418A10.595 10.595 0 0 1 7 9.05c-.26.43-.636.98-1.126 1.532C4.827 11.76 3.202 13 1 13H.5a.5.5 0 0 1 0-1H1c1.798 0 3.173-1.01 4.126-2.082A9.624 9.624 0 0 0 6.444 8a9.624 9.624 0 0 0-1.317-1.918C4.172 5.01 2.796 4 1 4H.5a.5.5 0 0 1-.5-.5z"/>
-            <path d="M13 5.466V1.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384l-2.36 1.966a.25.25 0 0 1-.41-.192zm0 9v-3.932a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384l-2.36 1.966a.25.25 0 0 1-.41-.192z"/>
+          <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="currentColor"
+              class="w-5 h-5 bi bi-shuffle"
+              viewBox="0 0 16 16"
+          >
+            <path
+                fill-rule="evenodd"
+                d="M0 3.5A.5.5 0 0 1 .5 3H1c2.202 0 3.827 1.24 4.874 2.418.49.552.865 1.102 1.126 1.532.26-.43.636-.98 1.126-1.532C9.173 4.24 10.798 3 13 3v1c-1.798 0-3.173 1.01-4.126 2.082A9.624 9.624 0 0 0 7.556 8a9.624 9.624 0 0 0 1.317 1.918C9.828 10.99 11.204 12 13 12v1c-2.202 0-3.827-1.24-4.874-2.418A10.595 10.595 0 0 1 7 9.05c-.26.43-.636.98-1.126 1.532C4.827 11.76 3.202 13 1 13H.5a.5.5 0 0 1 0-1H1c1.798 0 3.173-1.01 4.126-2.082A9.624 9.624 0 0 0 6.444 8a9.624 9.624 0 0 0-1.317-1.918C4.172 5.01 2.796 4 1 4H.5a.5.5 0 0 1-.5-.5z"
+            />
+            <path
+                d="M13 5.466V1.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384l-2.36 1.966a.25.25 0 0 1-.41-.192zm0 9v-3.932a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384l-2.36 1.966a.25.25 0 0 1-.41-.192z"
+            />
           </svg>
         </button>
 
         <!-- Назад -->
         <button
-            @click="prevTrack"
+            @click="playerStore.prevTrack"
             class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200"
         >
           <ChevronLeftIcon class="w-6 h-6" />
@@ -59,25 +66,27 @@
 
         <!-- Play / Pause -->
         <button
-            @click="togglePlay"
+            @click="playerStore.togglePlay"
             class="p-2 rounded-full bg-light-primary dark:bg-dark-primary text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200"
         >
-          <component :is="isPlaying ? PauseIcon : PlayIcon" class="w-6 h-6"
-                     :class="{'icon-offset': !isPlaying }"
+          <component
+              :is="playerStore.isPlaying ? PauseIcon : PlayIcon"
+              class="w-6 h-6"
+              :class="{ 'icon-offset': !playerStore.isPlaying }"
           />
         </button>
 
         <!-- Вперёд -->
         <button
-            @click="nextTrack"
+            @click="playerStore.nextTrack"
             class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200"
         >
           <ChevronRightIcon class="w-6 h-6" />
         </button>
 
-        <!-- Loop: трек -->
+        <!-- Loop -->
         <button
-            @click="toggleLoopMode"
+            @click="playerStore.toggleLoopMode"
             :class="loopClass"
             class="p-2 rounded hover:scale-110 active:scale-95 transition-transform duration-200"
             title="Режим повтора"
@@ -85,10 +94,8 @@
           <div class="relative w-6 h-6">
             <ArrowPathRoundedSquareIcon class="w-full h-full" />
             <span
-                v-if="loopMode === 'one'"
-                class="absolute bottom-0 right-0 bg-light-primary dark:bg-dark-primary
-               text-white text-[10px] font-bold rounded-full w-3 h-3
-               flex items-center justify-center"
+                v-if="playerStore.loopMode === 'one'"
+                class="absolute bottom-0 right-0 bg-light-primary dark:bg-dark-primary text-white text-[10px] font-bold rounded-full w-3 h-3 flex items-center justify-center"
             >1</span>
           </div>
         </button>
@@ -104,14 +111,14 @@
             v-model.number="currentTime"
             @input="seek"
             class="flex-1 progress-bar-time"
-            :style="{'--progress': `${(currentTime / duration) * 100}%`}"
+            :style="{ '--progress': `${(currentTime / duration) * 100}%` }"
         />
         <span class="text-xs text-light-text dark:text-dark-text">{{ formatTime(duration) }}</span>
       </div>
     </div>
 
     <!-- ПРАВАЯ СЕКЦИЯ: доп. функции + громкость -->
-    <div class="flex items-center space-x-4 w-1/4 justify-end min-w-[200px] relative ">
+    <div class="flex items-center space-x-4 w-1/4 justify-end min-w-[200px] relative">
       <!-- Speech to text -->
       <button
           @click="onSpeechToText"
@@ -125,15 +132,33 @@
           @click="toggleVersion"
           class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200"
       >
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-light-primary dark:text-dark-primary hover:scale-110 active:scale-95">
+        <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-5 h-5 text-light-primary dark:text-dark-primary hover:scale-110 active:scale-95"
+        >
           <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"></circle>
-          <path d="M7.40381 16.5967C4.8654 14.0583 4.8654 9.94271 7.40381 7.4043M16.5962 7.4043C17.6103 8.41836 18.2192 9.68413 18.4231 11.0005M16.5962 16.5967C17.0785 16.1144 17.4692 15.5751 17.7682 15.0005" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
-          <path d="M7 3.33782C8.47087 2.48697 10.1786 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 22 22 12 22C6.47715 22 2 17.5228 2 12C2 10.1786 2.48697 8.47087 3.33782 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+          <path
+              d="M7.40381 16.5967C4.8654 14.0583 4.8654 9.94271 7.40381 7.4043M16.5962 7.4043C17.6103 8.41836 18.2192 9.68413 18.4231 11.0005M16.5962 16.5967C17.0785 16.1144 17.4692 15.5751 17.7682 15.0005"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+          ></path>
+          <path
+              d="M7 3.33782C8.47087 2.48697 10.1786 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 22 22 12 22C6.47715 22 2 17.5228 2 12C2 10.1786 2.48697 8.47087 3.33782 7"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+          ></path>
         </svg>
       </button>
 
+      <!-- Очередь -->
       <button @click="toggleQueue" class="p-2 rounded">
-        <QueueListIcon class="w-5 h-5 text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200"/>
+        <QueueListIcon
+            class="w-5 h-5 text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200"
+        />
       </button>
       <QueuePopOver v-if="showQueue" @close="showQueue = false" />
 
@@ -148,7 +173,6 @@
       <!-- Громкость -->
       <div class="flex items-center space-x-2">
         <div class="relative w-20 h-6 flex items-center">
-          <!-- Ползунок громкости -->
           <input
               type="range"
               min="0"
@@ -161,10 +185,8 @@
               @touchstart="showVolumeHint = true"
               @touchend="setTimeout(() => showVolumeHint = false, 1000)"
               class="w-full h-full progress-bar-volume"
-              :style="{'--progress': `${volume * 100}%`}"
+              :style="{ '--progress': `${volume * 100}%` }"
           />
-
-          <!-- Подсказка с процентом -->
           <transition name="fade">
             <span
                 v-if="showVolumeHint"
@@ -195,7 +217,8 @@
 <script setup>
 import QueuePopOver from "@/components/Music/QueuePopOver.vue";
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
-import { usePlayerStore } from '@/store/player.js';
+import { usePlayerStore } from '@/store/player';
+import { useTrackStore } from '@/store/track';
 import { throttle } from 'lodash';
 import {
   HeartIcon as HeartOutline,
@@ -213,100 +236,93 @@ import {
 } from '@heroicons/vue/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/vue/24/solid';
 
-// Хранилище Pinia
+// Хранилища Pinia
 const playerStore = usePlayerStore();
-
-// Данные трека из Pinia
-const currentAvatar = computed(() => playerStore.currentTrackObj?.avatarUrl);
-const trackTitle = computed(() => playerStore.currentTrackObj?.title || 'Трек');
-const artistName = computed(() => playerStore.currentTrackObj?.artist || 'Исполнитель');
-const isPlaying = computed(() => playerStore.isPlaying);
+const trackStore = useTrackStore();
 
 // Состояние плеера
-const isLiked = ref(false);
+const audio = ref(null);
 const currentTime = ref(0);
 const duration = ref(0);
-const audio = ref(null);
 const volume = ref(0.5);
 const isMuted = ref(false);
-const loopMode = computed(() => playerStore.loopMode);
-const shuffleActive = computed(() => playerStore.shuffleActive);
 const showVolumeHint = ref(false);
 const showQueue = ref(false);
+const currentVersion = ref('processed'); // processed | original
+const isInLibrary = ref(false);
 
-// Троттлинг для ontimeupdate
-const throttledTimeUpdate = throttle((audio) => {
-  currentTime.value = audio.currentTime;
-}, 200);
+// Трек и метаданные
+const currentTrack = computed(() => playerStore.currentTrack);
+const defaultCover = 'https://via.placeholder.com/48'; // Замени на реальный placeholder
 
-// Инициализация Audio при смене трека
+// Проверка, находится ли трек в библиотеке
 watch(
-    () => playerStore.currentTrackObj,
-    (newTrackObj) => {
-      if (newTrackObj?.file || newTrackObj?.url) {
-        console.log('New track:', newTrackObj);
-        // Очистка старого audio
-        if (audio.value) {
-          audio.value.pause();
-          audio.value.src = ''; // Очистка источника
-        } else {
-          audio.value = new Audio();
-        }
-        // Установка нового источника
-        audio.value.src = newTrackObj.url || URL.createObjectURL(newTrackObj.file);
-        audio.value.volume = isMuted.value ? 0 : volume.value;
-        audio.value.loop = playerStore.loopMode === 'one';
-
-        audio.value.onloadedmetadata = () => {
-          duration.value = audio.value.duration || 240;
-          currentTime.value = 0;
-          console.log('Metadata loaded, duration:', duration.value);
-        };
-
-        audio.value.ontimeupdate = () => {
-          throttledTimeUpdate(audio.value);
-        };
-
-        audio.value.onended = () => {
-          console.log('Track ended, loopMode:', playerStore.loopMode);
-          if (playerStore.loopMode === 'one') {
-            audio.value.currentTime = 0;
-            audio.value.play().catch((err) => console.error('Playback error:', err));
-          } else {
-            playerStore.nextTrack();
-          }
-        };
-
-        audio.value.onpause = () => {
-          console.log('Audio paused');
-          playerStore.isPlaying = false;
-        };
-
-        audio.value.onplay = () => {
-          console.log('Audio playing');
-          playerStore.isPlaying = true;
-        };
-
-        // Передача audio в store
-        console.log('Setting audio element to store:', audio.value);
-        playerStore.setAudioElement(audio.value);
-
-        if (playerStore.isPlaying) {
-          audio.value.play().catch((err) => console.error('Playback error:', err));
-        }
+    () => currentTrack.value?.id,
+    async (trackId) => {
+      if (trackId) {
+        isInLibrary.value = await trackService.isTrackInLibrary(trackStore.userId, trackId);
+      } else {
+        isInLibrary.value = false;
       }
     },
     { immediate: true }
+);
+
+// Троттлинг для ontimeupdate
+const throttledTimeUpdate = throttle(() => {
+  if (audio.value) {
+    currentTime.value = audio.value.currentTime;
+  }
+}, 200);
+
+// Инициализация audio
+onMounted(() => {
+  audio.value = playerStore.audioElement || new Audio();
+  playerStore.setAudioElement(audio.value);
+  audio.value.volume = isMuted.value ? 0 : volume.value;
+
+  audio.value.onloadedmetadata = () => {
+    duration.value = audio.value.duration || 240;
+    currentTime.value = 0;
+  };
+
+  audio.value.ontimeupdate = () => throttledTimeUpdate();
+
+  audio.value.onended = () => {
+    if (playerStore.loopMode !== 'one') {
+      playerStore.nextTrack();
+    }
+  };
+
+  audio.value.onpause = () => {
+    playerStore.isPlaying = false;
+  };
+
+  audio.value.onplay = () => {
+    playerStore.isPlaying = true;
+  };
+});
+
+// Обновление src при смене трека или версии
+watch(
+    [() => currentTrack.value?.streamUrl, currentVersion],
+    ([newStreamUrl]) => {
+      if (newStreamUrl && audio.value) {
+        audio.value.src = trackService.getStreamUrl(currentTrack.value.id, currentVersion.value);
+        if (playerStore.isPlaying) {
+          audio.value.play().catch(err => console.error('Playback error:', err));
+        }
+      }
+    }
 );
 
 // Синхронизация воспроизведения
 watch(
     () => playerStore.isPlaying,
     (playing) => {
-      console.log('isPlaying changed:', playing);
       if (audio.value) {
         if (playing && audio.value.paused) {
-          audio.value.play().catch((err) => console.error('Playback error:', err));
+          audio.value.play().catch(err => console.error('Playback error:', err));
         } else if (!playing && !audio.value.paused) {
           audio.value.pause();
         }
@@ -314,49 +330,20 @@ watch(
     }
 );
 
-// Сохранение audio при размонтировании
-onMounted(() => {
-  console.log('MusicBar mounted');
-  if (playerStore.audioElement && !audio.value) {
-    audio.value = playerStore.audioElement;
-    audio.value.volume = isMuted.value ? 0 : volume.value;
-    audio.value.ontimeupdate = () => throttledTimeUpdate(audio.value);
-    console.log('Restored audio element from store');
-  }
-});
-
 onUnmounted(() => {
-  console.log('MusicBar unmounted');
-  // Не очищаем audio.value, чтобы сохранить его в store
+  throttledTimeUpdate.cancel();
 });
 
 // Методы
-function togglePlay() {
-  console.log('togglePlay, current isPlaying:', playerStore.isPlaying);
-  playerStore.togglePlay();
-}
-
-function toggleLike() {
-  isLiked.value = !isLiked.value;
-  if (playerStore.currentTrack) {
-    playerStore.currentTrack.isLiked = isLiked.value;
+async function toggleAddToLibrary() {
+  if (currentTrack.value?.id) {
+    await trackStore.addToLibrary(currentTrack.value.id);
+    isInLibrary.value = true;
   }
 }
 
-function toggleLoopMode() {
-  playerStore.toggleLoopMode();
-}
-
-function nextTrack() {
-  playerStore.nextTrack();
-}
-
-function prevTrack() {
-  playerStore.prevTrack();
-}
-
-function toggleShuffle() {
-  playerStore.toggleShuffle();
+function toggleVersion() {
+  currentVersion.value = currentVersion.value === 'processed' ? 'original' : 'processed';
 }
 
 function toggleQueue() {
@@ -364,28 +351,22 @@ function toggleQueue() {
 }
 
 function onSpeechToText() {
-  console.log('Speech to text');
-}
-
-function toggleVersion() {
-  console.log('Toggle version');
+  console.log('Speech to text - TODO');
 }
 
 function toggleFloatMode() {
-  console.log('Toggle float mode');
+  console.log('Toggle float mode - TODO');
 }
 
 function seek() {
   if (audio.value) {
     audio.value.currentTime = currentTime.value;
-    console.log('Seek to:', currentTime.value);
   }
 }
 
 function updateVolume() {
   if (audio.value) {
     audio.value.volume = volume.value;
-    console.log('Volume updated:', volume.value);
     if (volume.value > 0 && isMuted.value) {
       isMuted.value = false;
     }
@@ -399,7 +380,6 @@ function toggleMute() {
   if (audio.value) {
     isMuted.value = !isMuted.value;
     audio.value.volume = isMuted.value ? 0 : volume.value;
-    console.log('Mute toggled, isMuted:', isMuted.value);
     if (!isMuted.value && volume.value === 0) {
       volume.value = 0.5;
     }
@@ -407,13 +387,14 @@ function toggleMute() {
 }
 
 function formatTime(sec) {
+  if (!sec) return '00:00';
   const m = String(Math.floor(sec / 60)).padStart(2, '0');
   const s = String(Math.floor(sec % 60)).padStart(2, '0');
   return `${m}:${s}`;
 }
 
 const loopClass = computed(() => {
-  return loopMode.value === 'none'
+  return playerStore.loopMode === 'none'
       ? 'text-light-text dark:text-dark-text'
       : 'text-light-primary dark:text-dark-primary';
 });
@@ -422,7 +403,6 @@ const loopClass = computed(() => {
 <style scoped>
 :root {
   --progress: 0%;
-  --thumb-position: 0%;
 }
 input[type="range"] {
   appearance: none;
@@ -432,13 +412,10 @@ input[type="range"] {
   background-image: linear-gradient(to right, #6366f1 var(--progress, 0%), transparent 0);
   background-repeat: no-repeat;
 }
-
 .dark input[type="range"] {
   background-color: #4b5563;
   background-image: linear-gradient(to right, #8b5cf6 var(--progress, 0%), transparent 0);
 }
-
-/* Webkit (Chrome, Safari) */
 input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   border-radius: 9999px;
@@ -446,14 +423,10 @@ input[type="range"]::-webkit-slider-thumb {
   width: 0.75rem;
   background-color: #6366f1;
   cursor: pointer;
-  position: relative;
 }
-
 .dark input[type="range"]::-webkit-slider-thumb {
   background-color: #8b5cf6;
 }
-
-/* Firefox */
 input[type="range"]::-moz-range-thumb {
   border-radius: 9999px;
   height: 0.75rem;
@@ -462,22 +435,17 @@ input[type="range"]::-moz-range-thumb {
   cursor: pointer;
   border: none;
 }
-
 .dark input[type="range"]::-moz-range-thumb {
   background-color: #8b5cf6;
 }
-
-/* Для Firefox - альтернативный способ закрашивания */
 input[type="range"]::-moz-range-progress {
   background-color: #6366f1;
   border-radius: 9999px;
   height: 0.25rem;
 }
-
 .dark input[type="range"]::-moz-range-progress {
   background-color: #8b5cf6;
 }
-
 .progress-bar-volume {
   appearance: none;
   height: 0.25rem;
@@ -485,12 +453,10 @@ input[type="range"]::-moz-range-progress {
   background-image: linear-gradient(to right, #6366f1 var(--progress), transparent 0);
   border-radius: 9999px;
 }
-
 .dark .progress-bar-volume {
   background-color: #4b5563;
   background-image: linear-gradient(to right, #8b5cf6 var(--progress), transparent 0);
 }
-
 .progress-bar-volume::-webkit-slider-thumb {
   appearance: none;
   width: 0.75rem;
@@ -499,16 +465,15 @@ input[type="range"]::-moz-range-progress {
   background-color: #6366f1;
   cursor: pointer;
 }
-
 .dark .progress-bar-volume::-webkit-slider-thumb {
   background-color: #8b5cf6;
 }
-
-/* Анимация подсказки */
-.fade-enter-active, .fade-leave-active {
+.fade-enter-active,
+.fade-leave-active {
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
-.fade-enter-from, .fade-leave-to {
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
   transform: translateY(2px) translateX(-50%);
 }
@@ -516,4 +481,3 @@ input[type="range"]::-moz-range-progress {
   transform: translateX(1px);
 }
 </style>
-```

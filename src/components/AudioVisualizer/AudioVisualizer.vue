@@ -1,4 +1,3 @@
-```vue
 <template>
   <div class="fixed bg-[#fafafc] dark:bg-[#17181c] inset-0 -z-10 overflow-hidden">
     <canvas
@@ -384,4 +383,3 @@ watch([isPlaying, audioElement], ([newPlaying, newAudioElement], [oldPlaying]) =
   }
 });
 </script>
-```
