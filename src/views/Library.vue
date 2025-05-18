@@ -12,6 +12,9 @@ const trackStore = useTrackStore();
 const playerStore = usePlayerStore();
 const toast = useToast();
 
+// Состояние коллекции
+const collection = trackStore.fetchUserLibrary();
+
 // Состояние поиска
 const searchQuery = ref('');
 

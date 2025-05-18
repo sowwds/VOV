@@ -1,6 +1,7 @@
 import api from '@/services/api';
 
 function normalize(raw) {
+    // console.log(raw);
     return {
         trackId:   raw.trackid,    // здесь сохраняем из ответа поле trackid в trackId
         title:     raw.title,
@@ -9,8 +10,8 @@ function normalize(raw) {
         year:      raw.year,
         country:   raw.country,
         coverUrl:  raw.coverurl,
-        likes:     raw.likes,
-        playCount: raw.playcount,
+        likes:     raw.likes.toString(),
+        playCount: raw.playcount.toString(),
     };
 }
 
@@ -43,13 +44,15 @@ export const trackService = {
 
     async addToLibrary(userId, trackId) {
         // бекенд ждёт trackId
+        console.log(trackId);
         const { data } = await api.post('/users/library', { userId, trackId });
         return data;
     },
 
     async getTrackMetadata(trackId) {
         const { data } = await api.get(`/public-library/${trackId}`);
-        return normalize(data);
+        console.log(data);
+        return data;
     },
 
     getStreamUrl(trackId, version = 'processed') {

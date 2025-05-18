@@ -33,8 +33,9 @@
     <div class="flex space-x-2">
       <!-- Добавить/убрать из библиотеки -->
       <button @click.stop="onToggleLibrary" class="text-light-text dark:text-dark-text">
-        <HeartIcon :class="['w-5 h-5', isInLibrary ? 'text-red-500' : '']" />
+        <HeartIcon :class="['w-5 h-5 ', isInLibrary ? 'dark:text-dark-primary text-light-primary fill-current' : '']" />
       </button>
+
       <!-- В очередь -->
       <button @click.stop="enqueue" class="text-light-text dark:text-dark-text">
         <QueueListIcon class="w-5 h-5" />
