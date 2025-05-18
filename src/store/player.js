@@ -1,164 +1,103 @@
+// src/store/player.js
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
-import { trackService } from '@/services/trackService';
-import { useTrackStore } from '@/store/track';
+import { ref, computed, nextTick } from 'vue';
+import { useTrackStore }            from '@/store/track';
+import { trackService }             from '@/services/trackService';
 
 export const usePlayerStore = defineStore('player', () => {
-    // Ссылка на store треков
-    const trackStore = useTrackStore();
-
-    // Массив ID треков в очереди воспроизведения
-    const queue = ref([]);
-    // ID текущего трека
+    const trackStore     = useTrackStore();
+    const queue          = ref([]);
     const currentTrackId = ref(null);
-    // Состояние воспроизведения
-    const isPlaying = ref(false);
-    // Режим повтора: 'none' | 'all' | 'one'
-    const loopMode = ref('none');
-    // Состояние перемешивания
-    const shuffleActive = ref(false);
-    // Элемент <audio>
-    const audioElement = ref(null);
+    const isPlaying      = ref(false);
+    const loopMode       = ref('none'); // 'none' | 'all' | 'one'
+    const shuffleActive  = ref(false);
+    const audioElement   = ref(null);
 
-    // Вычисляем индекс текущего трека в очереди
-    const currentIndex = computed(() => queue.value.findIndex(id => id === currentTrackId.value));
+    const currentIndex = computed(() =>
+        queue.value.findIndex(id => id === currentTrackId.value)
+    );
 
-    // Получаем объект текущего трека
+    // Строим текущий трек из trackStore по trackid
     const currentTrack = computed(() => {
         if (!currentTrackId.value) return null;
-        // Ищем трек в trackStore (userLibrary, topPlays, topLikes, newTracks, searchResults)
-        const sources = [
+        const all = [
             ...trackStore.userLibrary,
             ...trackStore.topPlays,
             ...trackStore.topLikes,
             ...trackStore.newTracks,
             ...trackStore.searchResults,
         ];
-        const track = sources.find(t => t.trackId === currentTrackId.value);
-        if (!track) return null;
+        const t = all.find(x => x.trackid === currentTrackId.value);
+        if (!t) return null;
         return {
-            id: track.trackId,
-            title: track.title,
-            author: track.author,
-            album: track.album,
-            year: track.year,
-            country: track.country,
-            coverUrl: track.coverUrl,
-            streamUrl: trackService.getStreamUrl(track.trackId, 'processed'),
-            likes: track.likes,
-            playCount: track.playCount,
+            trackid:   t.trackid,
+            title:     t.title,
+            author:    t.author,
+            album:     t.album,
+            year:      t.year,
+            country:   t.country,
+            coverurl:  t.coverurl,
+            likes:     t.likes,
+            playcount: t.playcount,
+            streamUrl: trackService.getStreamUrl(t.trackid),
         };
     });
 
-    // Получаем треки в очереди
+    // Строим очередь объектов из массива trackid
     const queueTracks = computed(() =>
         queue.value
             .map(id => {
-                const sources = [
+                const t = [
                     ...trackStore.userLibrary,
                     ...trackStore.topPlays,
                     ...trackStore.topLikes,
                     ...trackStore.newTracks,
                     ...trackStore.searchResults,
-                ];
-                const track = sources.find(t => t.trackId === id);
-                return track
-                    ? {
-                        id: track.trackId,
-                        title: track.title,
-                        author: track.author,
-                        album: track.album,
-                        year: track.year,
-                        country: track.country,
-                        coverUrl: track.coverUrl,
-                        streamUrl: trackService.getStreamUrl(track.trackId, 'processed'),
-                        likes: track.likes,
-                        playCount: track.playCount,
-                    }
+                ].find(x => x.trackid === id);
+                return t
+                    ? { ...t, streamUrl: trackService.getStreamUrl(t.trackid) }
                     : null;
             })
             .filter(Boolean)
     );
 
-    // Установить <audio> элемент
-    function setAudioElement(element) {
-        audioElement.value = element;
-        if (element) {
-            // Обработчики событий для <audio>
-            element.onended = () => nextTrack();
-            element.onplay = () => (isPlaying.value = true);
-            element.onpause = () => (isPlaying.value = false);
+    function setAudioElement(el) {
+        audioElement.value = el;
+        if (!el) return;
+        el.onended = () => nextTrack();
+        el.onplay  = () => (isPlaying.value = true);
+        el.onpause = () => (isPlaying.value = false);
+    }
+
+    async function setCurrentTrack(trackid) {
+        // если нет метаданных — запрашиваем
+        if (![...trackStore.userLibrary,
+            ...trackStore.topPlays,
+            ...trackStore.topLikes,
+            ...trackStore.newTracks,
+            ...trackStore.searchResults
+        ].some(x => x.trackid === trackid)) {
+            const md = await trackService.getTrackMetadata(trackid);
+            trackStore.searchResults.push(md);
+        }
+
+        currentTrackId.value = trackid;
+        if (!queue.value.includes(trackid)) {
+            queue.value.unshift(trackid);
+        }
+
+        await nextTick();
+        if (audioElement.value && currentTrack.value) {
+            audioElement.value.src = currentTrack.value.streamUrl;
+            if (isPlaying.value) audioElement.value.play().catch(console.error);
         }
     }
 
-    // Добавить трек в очередь
-    async function addTrack(trackId) {
-        if (!queue.value.includes(trackId)) {
-            queue.value.push(trackId);
-            // Убедимся, что метаданные трека есть в trackStore
-            const sources = [
-                ...trackStore.userLibrary,
-                ...trackStore.topPlays,
-                ...trackStore.topLikes,
-                ...trackStore.newTracks,
-                ...trackStore.searchResults,
-            ];
-            if (!sources.some(t => t.trackId === trackId)) {
-                try {
-                    const metadata = await trackService.getTrackMetadata(trackId);
-                    trackStore.searchResults.push(metadata); // Добавляем в searchResults как временное хранилище
-                } catch (error) {
-                    console.error('Ошибка загрузки метаданных трека:', error);
-                }
-            }
-        }
-    }
-
-    // Добавить несколько треков в очередь
-    async function addTracks(trackIds) {
-        for (const trackId of trackIds) {
-            await addTrack(trackId);
-        }
-    }
-
-    // Установить текущий трек
-    async function setCurrentTrack(trackId) {
-        try {
-            // Убедимся, что метаданные трека доступны
-            const sources = [
-                ...trackStore.userLibrary,
-                ...trackStore.topPlays,
-                ...trackStore.topLikes,
-                ...trackStore.newTracks,
-                ...trackStore.searchResults,
-            ];
-            if (!sources.some(t => t.trackId === trackId)) {
-                const metadata = await trackService.getTrackMetadata(trackId);
-                trackStore.searchResults.push(metadata);
-            }
-            currentTrackId.value = trackId;
-            if (!queue.value.includes(trackId)) {
-                queue.value.unshift(trackId);
-            }
-            // Обновляем src в audioElement
-            if (audioElement.value && currentTrack.value) {
-                audioElement.value.src = currentTrack.value.streamUrl;
-                if (isPlaying.value) {
-                    audioElement.value.play();
-                }
-            }
-        } catch (error) {
-            console.error('Ошибка установки текущего трека:', error);
-        }
-    }
-
-    // Воспроизвести трек
-    async function playTrack(trackId) {
-        await setCurrentTrack(trackId);
+    async function playTrack(trackid) {
+        await setCurrentTrack(trackid);
         play();
     }
 
-    // Начать воспроизведение
     function play() {
         if (audioElement.value && currentTrack.value) {
             audioElement.value.play();
@@ -166,7 +105,6 @@ export const usePlayerStore = defineStore('player', () => {
         }
     }
 
-    // Поставить на паузу
     function pause() {
         if (audioElement.value) {
             audioElement.value.pause();
@@ -174,155 +112,85 @@ export const usePlayerStore = defineStore('player', () => {
         }
     }
 
-    // Переключить воспроизведение/паузу
-    async function togglePlay(trackId = null) {
-        if (trackId && trackId !== currentTrackId.value) {
-            await playTrack(trackId);
-        } else if (isPlaying.value) {
-            pause();
+    async function togglePlay(trackid = null) {
+        if (trackid && trackid !== currentTrackId.value) {
+            await playTrack(trackid);
         } else {
-            play();
+            isPlaying.value ? pause() : play();
         }
     }
 
-    // Переключить режим повтора
-    function toggleLoopMode() {
-        if (loopMode.value === 'none') {
-            loopMode.value = 'all';
-        } else if (loopMode.value === 'all') {
-            loopMode.value = 'one';
-        } else {
-            loopMode.value = 'none';
+    function nextTrack() {
+        if (shuffleActive.value) {
+            const idx = Math.floor(Math.random() * queue.value.length);
+            return playTrack(queue.value[idx]);
         }
+        if (currentIndex.value < 0) return;
+        if (currentIndex.value === queue.value.length - 1) {
+            return loopMode.value === 'all'
+                ? playTrack(queue.value[0])
+                : pause();
+        }
+        playTrack(queue.value[currentIndex.value + 1]);
+    }
+
+    function prevTrack() {
+        if (currentIndex.value > 0) {
+            return playTrack(queue.value[currentIndex.value - 1]);
+        }
+        // если у нас первый — просто сбрасываем в начало
+        if (audioElement.value) audioElement.value.currentTime = 0;
+    }
+
+    function toggleLoopMode() {
+        loopMode.value = loopMode.value === 'none'
+            ? 'all'
+            : loopMode.value === 'all'
+                ? 'one'
+                : 'none';
         if (audioElement.value) {
             audioElement.value.loop = loopMode.value === 'one';
         }
     }
 
-    // Перейти к следующему треку
-    function nextTrack() {
-        if (currentIndex.value === -1) return;
-
-        if (shuffleActive.value) {
-            playRandomTrack();
-            return;
-        }
-
-        if (currentIndex.value >= queue.value.length - 1) {
-            if (loopMode.value === 'all') {
-                const firstTrackId = queue.value[0];
-                if (firstTrackId) playTrack(firstTrackId);
-            } else {
-                pause();
-            }
-            return;
-        }
-
-        const nextTrackId = queue.value[currentIndex.value + 1];
-        if (nextTrackId) playTrack(nextTrackId);
-    }
-
-    // Перейти к предыдущему треку
-    function prevTrack() {
-        if (currentIndex.value <= 0) {
-            if (currentTrackId.value) {
-                playTrack(currentTrackId.value);
-                if (audioElement.value) audioElement.value.currentTime = 0;
-            }
-            return;
-        }
-
-        const prevTrackId = queue.value[currentIndex.value - 1];
-        if (prevTrackId) playTrack(prevTrackId);
-    }
-
-    // Воспроизвести случайный трек
-    function playRandomTrack() {
-        if (queue.value.length === 0) return;
-        const randomIndex = Math.floor(Math.random() * queue.value.length);
-        const randomTrackId = queue.value[randomIndex];
-        if (randomTrackId) playTrack(randomTrackId);
-    }
-
-    // Переключить режим перемешивания
     function toggleShuffle() {
         shuffleActive.value = !shuffleActive.value;
     }
 
-    // Добавить трек в конец очереди
-    async function enqueue(trackId) {
-        await addTrack(trackId);
-        if (!queue.value.includes(trackId)) {
-            queue.value.push(trackId);
+    async function enqueue(trackid) {
+        if (!queue.value.includes(trackid)) {
+            queue.value.push(trackid);
+            await setCurrentTrack(trackid); // подгрузка метаданных
         }
     }
 
-    // Добавить трек после текущего
-    async function enqueueNext(trackId) {
-        await addTrack(trackId);
-        const curIdx = currentIndex.value;
-        if (curIdx === -1) {
-            enqueue(trackId);
-        } else if (!queue.value.includes(trackId)) {
-            queue.value.splice(curIdx + 1, 0, trackId);
+    async function enqueueNext(trackid) {
+        if (!queue.value.includes(trackid)) {
+            const i = currentIndex.value;
+            queue.value.splice(i < 0 ? queue.value.length : i + 1, 0, trackid);
+            await setCurrentTrack(trackid);
         }
     }
 
-    // Удалить трек из очереди
-    function dequeue(trackId) {
-        queue.value = queue.value.filter(id => id !== trackId);
+    function dequeue(trackid) {
+        queue.value = queue.value.filter(x => x !== trackid);
     }
 
-    // Очистить очередь
     function clearQueue() {
         queue.value = [];
     }
 
-    // Переместить трек в очереди
-    function moveInQueue(oldIndex, newIndex) {
-        if (
-            oldIndex < 0 ||
-            newIndex < 0 ||
-            oldIndex >= queue.value.length ||
-            newIndex >= queue.value.length
-        ) {
-            return;
-        }
-        const [id] = queue.value.splice(oldIndex, 1);
-        queue.value.splice(newIndex, 0, id);
+    function moveInQueue(a, b) {
+        if (a < 0 || b < 0 || a >= queue.value.length || b >= queue.value.length) return;
+        const [x] = queue.value.splice(a, 1);
+        queue.value.splice(b, 0, x);
     }
 
     return {
-        // Состояние
-        queue,
-        currentTrackId,
-        isPlaying,
-        loopMode,
-        shuffleActive,
-        audioElement,
-
-        // Геттеры
-        currentTrack,
-        queueTracks,
-        currentIndex,
-
-        // Действия
-        setAudioElement,
-        addTrack,
-        addTracks,
-        setCurrentTrack,
-        playTrack,
-        play,
-        pause,
-        togglePlay,
-        toggleLoopMode,
-        nextTrack,
-        prevTrack,
-        toggleShuffle,
-        enqueue,
-        enqueueNext,
-        dequeue,
-        clearQueue,
-        moveInQueue,
+        queue, currentTrackId, isPlaying, loopMode, shuffleActive, audioElement,
+        currentTrack, queueTracks, currentIndex,
+        setAudioElement, playTrack, play, pause, togglePlay,
+        nextTrack, prevTrack, toggleLoopMode, toggleShuffle,
+        enqueue, enqueueNext, dequeue, clearQueue, moveInQueue,
     };
 });
