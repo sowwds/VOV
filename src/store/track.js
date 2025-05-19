@@ -1,3 +1,4 @@
+// src/store/track.js
 import { defineStore } from 'pinia';
 import { trackService } from '@/services/trackService';
 import { useAuthStore } from '@/store/auth';
@@ -45,11 +46,17 @@ export const useTrackStore = defineStore('track', {
             await trackService.addToLibrary(auth.userId, trackId);
             await this.fetchUserLibrary();
         },
+        async removeFromLibrary(trackId) {
+            const auth = useAuthStore();
+            if (!auth.userId) throw new Error('Not logged in');
+            await trackService.removeFromLibrary(auth.userId, trackId);
+            await this.fetchUserLibrary();
+        },
         async playTrack(trackId) {
             await usePlayerStore().playTrack(trackId);
         },
         stopTrack() {
             usePlayerStore().pause();
         },
-    }
+    },
 });
