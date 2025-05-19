@@ -1,98 +1,3 @@
-<script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useTrackStore } from '@/store/track';
-import { usePlayerStore } from '@/store/player';
-import { useToast } from 'vue-toastification';
-import SearchInput from '@/components/Sidebar/SearchInput.vue';
-import TrackCard from '@/components/TrackCard.vue';
-import TrackRow from '@/components/TrackRow.vue';
-
-// Хранилища
-const trackStore = useTrackStore();
-const playerStore = usePlayerStore();
-const toast = useToast();
-
-// Состояние коллекции
-const collection = trackStore.fetchUserLibrary();
-
-// Состояние поиска
-const searchQuery = ref('');
-
-// Состояние вкладки популярных треков
-const popularTab = ref('listens'); // listens | likes
-
-// Вычисляемые свойства
-const popularTracks = computed(() => {
-  if (popularTab.value === 'listens') {
-    return trackStore.topPlays;
-  } else if (popularTab.value === 'likes') {
-    return trackStore.topLikes;
-  }
-  return [];
-});
-
-// Загрузка данных
-const fetchData = async () => {
-  try {
-    await Promise.all([
-      trackStore.fetchTopPlays(10),
-      trackStore.fetchTopLikes(10),
-      trackStore.fetchNewTracks(10),
-    ]);
-  } catch (error) {
-    console.error('Ошибка загрузки треков:', error);
-    toast.error('Не удалось загрузить треки');
-  }
-};
-
-// Обработка поиска
-const handleSearch = async () => {
-  if (searchQuery.value.trim()) {
-    try {
-      await trackStore.searchTracks(searchQuery.value);
-    } catch (error) {
-      console.error('Ошибка поиска:', error);
-      toast.error('Ошибка при поиске треков');
-    }
-  } else {
-    trackStore.searchResults = [];
-  }
-};
-
-// Обработка событий от TrackCard и TrackRow
-const addToLibrary = async (trackId) => {
-  try {
-    await trackStore.addToLibrary(trackId);
-    toast.success('Трек добавлен в коллекцию!');
-  } catch (error) {
-    console.error('Ошибка добавления в коллекцию:', error);
-    toast.error('Не удалось добавить трек в коллекцию');
-  }
-};
-
-const addToQueue = async (trackId) => {
-  try {
-    await playerStore.enqueue(trackId);
-    toast.success('Трек добавлен в очередь!');
-  } catch (error) {
-    console.error('Ошибка добавления в очередь:', error);
-    toast.error('Не удалось добавить трек в очередь');
-  }
-};
-
-const playTrack = (trackId) => {
-  try {
-    playerStore.playTrack(trackId);
-  } catch (error) {
-    console.error('Ошибка воспроизведения:', error);
-    toast.error('Не удалось воспроизвести трек');
-  }
-};
-
-// Загрузка данных при монтировании
-onMounted(fetchData);
-</script>
-
 <template>
   <div class="ml-auto mr-auto w-full max-w-screen-lg text-light-text dark:text-dark-text">
     <!-- Поиск -->
@@ -111,12 +16,15 @@ onMounted(fetchData);
       <h3 class="text-lg mb-4">Результаты поиска</h3>
       <div class="flex flex-col space-y-2">
         <TrackRow
-            v-for="track in trackStore.searchResults"
-            :key="track.trackId"
-            :track="track"
+            v-for="t in trackStore.searchResults"
+            :key="t.trackId"
+            :track="t"
+            section="searchResults"
             @add-to-library="addToLibrary"
             @add-to-queue="addToQueue"
             @play-track="playTrack"
+            @toggle-play="togglePlay"
+            @add-next="addToNext"
         />
       </div>
     </div>
@@ -145,12 +53,15 @@ onMounted(fetchData);
       <div
           class="flex overflow-x-auto space-x-4 pb-4 scrollbar-thin scrollbar-thumb-light-primary dark:scrollbar-thumb-dark-primary"
       >
-        <div v-for="track in popularTracks" :key="track.trackId" class="flex-none w-64">
-          <TrackCard
-              :track="track"
+        <div v-for="t in popularTracks" :key="t.trackId" class="flex-none w-64">
+          <TrackCardLibrary
+              :track="t"
+              :section="popularTab === 'listens' ? 'topPlays' : 'topLikes'"
               @add-to-library="addToLibrary"
               @add-to-queue="addToQueue"
               @play-track="playTrack"
+              @toggle-play="togglePlay"
+              @add-next="addToNext"
           />
         </div>
       </div>
@@ -161,17 +72,101 @@ onMounted(fetchData);
       <h3 class="text-lg mb-4">Новые треки</h3>
       <div class="flex flex-col space-y-2">
         <TrackRow
-            v-for="track in trackStore.newTracks"
-            :key="track.trackId"
-            :track="track"
+            v-for="t in trackStore.newTracks"
+            :key="t.trackId"
+            :track="t"
+            section="newTracks"
             @add-to-library="addToLibrary"
             @add-to-queue="addToQueue"
             @play-track="playTrack"
+            @toggle-play="togglePlay"
+            @add-next="addToNext"
         />
       </div>
     </div>
   </div>
 </template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import { useTrackStore } from '@/store/track';
+import { usePlayerStore } from '@/store/player';
+import { useToast } from 'vue-toastification';
+
+import SearchInput from '@/components/Sidebar/SearchInput.vue';
+import TrackCardLibrary from '@/components/TrackLayout/TrackCardLibrary.vue';
+import TrackRow from '@/components/TrackLayout/TrackRow.vue';
+
+const trackStore  = useTrackStore();
+const playerStore = usePlayerStore();
+const toast       = useToast();
+
+// Поисковый запрос
+const searchQuery = ref('');
+const handleSearch = async () => {
+  if (searchQuery.value.trim()) {
+    try {
+      await trackStore.searchTracks(searchQuery.value);
+    } catch (err) {
+      console.error('Ошибка поиска:', err);
+      toast.error('Ошибка при поиске треков');
+    }
+  } else {
+    trackStore.searchResults = [];
+  }
+};
+
+// Популярная вкладка
+const popularTab    = ref('listens'); // 'listens' | 'likes'
+const popularTracks = computed(() =>
+    popularTab.value === 'listens'
+        ? trackStore.topPlays
+        : trackStore.topLikes
+);
+
+// Предзагрузка данных
+onMounted(async () => {
+  try {
+    await Promise.all([
+      trackStore.fetchTopPlays(10),
+      trackStore.fetchTopLikes(10),
+      trackStore.fetchNewTracks(10),
+    ]);
+  } catch (err) {
+    console.error('Ошибка загрузки треков:', err);
+    toast.error('Не удалось загрузить треки');
+  }
+});
+
+// Обработчики событий
+const addToLibrary = async trackId => {
+  try {
+    await trackStore.addToLibrary(trackId);
+    toast.success('Трек добавлен в коллекцию!');
+  } catch (err) {
+    console.error('Ошибка добавления в коллекцию:', err);
+    toast.error('Не удалось добавить трек в коллекцию');
+  }
+};
+
+const addToQueue = trackId => {
+  playerStore.enqueue(trackId);
+  toast.success('Трек добавлен в очередь!');
+};
+
+const addToNext = trackId => {
+  playerStore.enqueueNext(trackId);
+  toast.success('Трек добавлен первым в очередь!');
+}
+
+const playTrack = trackId => {
+  playerStore.playTrack(trackId, undefined, { skipQueue: true });
+};
+
+const togglePlay = trackId => {
+  playerStore.togglePlay(trackId);
+}
+</script>
 
 <style scoped>
 .scrollbar-thin {

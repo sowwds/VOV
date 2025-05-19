@@ -6,7 +6,7 @@
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         <TrackCard
             v-for="track in userLibrary"
-            :key="track.trackid"
+            :key="track.trackId"
             :track="track"
             @play="onPlay"
             @add-to-library="onToggleLibrary"
@@ -18,7 +18,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import TrackCard from '@/components/TrackCard.vue';
+import TrackCard from '@/components/TrackLayout/TrackCard.vue';
 import { usePlayerStore } from '@/store/player';
 import { useTrackStore } from '@/store/track';
 
@@ -31,14 +31,14 @@ onMounted(async () => {
   userLibrary.value = trackStore.userLibrary;
 });
 
-function onPlay(trackid) {
-  playerStore.playTrack(trackid);
+function onPlay(trackId) {
+  playerStore.playTrack(trackId);
 }
 
-async function onToggleLibrary(trackid) {
+async function onToggleLibrary(trackId) {
   // Если трек уже в библиотеке, не добавляем заново
-  if (!trackStore.userLibrary.some(t => t.trackid === trackid)) {
-    await trackStore.addToLibrary(trackid);
+  if (!trackStore.userLibrary.some(t => t.trackId === trackId)) {
+    await trackStore.addToLibrary(trackId);
     await trackStore.fetchUserLibrary();
     userLibrary.value = trackStore.userLibrary;
   }

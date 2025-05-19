@@ -10,8 +10,8 @@ function normalize(raw) {
         year:      raw.year,
         country:   raw.country,
         coverUrl:  raw.coverurl,
-        likes:     raw.likes.toString(),
-        playCount: raw.playcount.toString(),
+        likes:     raw.likes != null   ? String(raw.likes)     : '',
+        playCount: raw.playcount != null ? String(raw.playcount) : '',
     };
 }
 

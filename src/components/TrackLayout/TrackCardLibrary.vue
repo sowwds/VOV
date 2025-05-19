@@ -56,13 +56,13 @@
     >
       <div class="bg-white dark:bg-dark-surface shadow-xl rounded-md w-40 overflow-hidden">
         <button
-            @click="addNext"
+            @click="onAddNext"
             class="block w-full text-left px-4 py-2 text-sm text-light-text dark:text-dark-text hover:bg-light-primary dark:hover:bg-dark-primary transition-colors"
         >
           Добавить следующим
         </button>
         <button
-            @click="addToQueue"
+            @click="onAddToQueue"
             class="block w-full text-left px-4 py-2 text-sm text-light-text dark:text-dark-text hover:bg-light-primary dark:hover:bg-dark-primary transition-colors"
         >
           Добавить в очередь
@@ -94,50 +94,61 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { usePlayerStore } from '@/store/player'
 import { PlayIcon, PauseIcon } from '@heroicons/vue/24/outline'
 
-// принимаем track с camelCase полями
-const props = defineProps({
-  track: { type: Object, required: true }
+// props: принимаем объект трека и раздел, из которого он вызван
+const { track, section } = defineProps({
+  track:   { type: Object, required: true },
+  section: { type: String, default: 'userLibrary' }
 })
-defineEmits(['add-to-library'])
 
-const player = usePlayerStore()
+// Теперь эмитим три события: play-track, add-to-queue и add-next
+const emit = defineEmits([
+  'play-track',
+  'add-to-queue',
+  'add-next',
+  'add-to-library',
+  'toggle-play',
+])
 
-const showMenu = ref(false)
-const menuRef = ref(null)
+const player     = usePlayerStore()
+const showMenu   = ref(false)
+const menuRef    = ref(null)
 const triggerRef = ref(null)
-let menuTimeout = null
+let menuTimeout  = null
 
 const defaultCover = 'https://via.placeholder.com/256'
 
-// флаг, текущий ли это трек
-const isCurrent = computed(() => player.currentTrackId === props.track.trackId)
+// вычисляем, текущий ли это трек
+const isCurrent = computed(() => player.currentTrackId === track.trackId)
 const isPlaying = computed(() => player.isPlaying && isCurrent.value)
 
 function onPlay() {
-  if (!props.track.trackId) return
-  if (!isCurrent.value) {
-    player.playTrack(props.track.trackId)
-  } else {
-    player.togglePlay()
+  if(isCurrent.value ) {
+     emit('toggle-play')
+  }
+  else {
+    emit('play-track', track.trackId, section)
   }
 }
 
-function openMenu() {
-  clearTimeout(menuTimeout)
-  showMenu.value = true
+function onAddToQueue() {
+  emit('add-to-queue', track.trackId)
+  closeMenu()
 }
-function closeMenu() {
-  showMenu.value = false
+
+function onAddNext() {
+  emit('add-next', track.trackId)
+  closeMenu()
 }
-function closeMenuWithDelay() {
-  menuTimeout = setTimeout(closeMenu, 200)
-}
+
+// остальные хелперы меню остались без изменений
+function openMenu() { clearTimeout(menuTimeout); showMenu.value = true }
+function closeMenu() { showMenu.value = false }
+function closeMenuWithDelay() { menuTimeout = setTimeout(closeMenu, 200) }
 function handleCardMouseLeave(e) {
   if (!menuRef.value?.contains(e.relatedTarget)) closeMenu()
 }
 function handleClickOutside(e) {
-  if (
-      showMenu.value &&
+  if ( showMenu.value &&
       !menuRef.value?.contains(e.target) &&
       !triggerRef.value?.contains(e.target)
   ) {
@@ -145,30 +156,18 @@ function handleClickOutside(e) {
   }
 }
 
-function addToQueue() {
-  if (props.track.trackId) {
-    player.enqueue(props.track.trackId)
-    closeMenu()
-  }
-}
-function addNext() {
-  if (props.track.trackId) {
-    player.enqueueNext(props.track.trackId)
-    closeMenu()
-  }
-}
-
-const windowWidth = ref(window.innerWidth)
+const windowWidth  = ref(window.innerWidth)
 const windowHeight = ref(window.innerHeight)
-
 const menuPosition = computed(() => {
   if (!triggerRef.value || !menuRef.value || !showMenu.value) return {}
   const rect = triggerRef.value.getBoundingClientRect()
   const menuW = 160, menuH = 120, pad = 8, off = 4
-  const right = windowWidth.value - rect.right >= menuW + pad
+  const right  = windowWidth.value  - rect.right >= menuW + pad
   const bottom = windowHeight.value - rect.bottom >= menuH + pad + off
-  let left = right ? rect.left : Math.max(pad, rect.right - menuW)
-  let top  = bottom
+  const left = right
+      ? rect.left
+      : Math.max(pad, rect.right - menuW)
+  const top = bottom
       ? rect.bottom + off
       : Math.max(pad, rect.top - menuH - off)
   return { left: `${left}px`, top: `${top}px` }
@@ -177,7 +176,7 @@ const menuPosition = computed(() => {
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   window.addEventListener('resize', () => {
-    windowWidth.value = window.innerWidth
+    windowWidth.value  = window.innerWidth
     windowHeight.value = window.innerHeight
   })
 })
