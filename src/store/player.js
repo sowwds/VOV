@@ -15,7 +15,6 @@ export const usePlayerStore = defineStore('player', () => {
     const audioElement   = ref(null)
     const skipQueueOnPlay = ref(false)
 
-
     const currentTrack = computed(() => {
         if (!currentTrackId.value) return null
         // ищем в любом списке

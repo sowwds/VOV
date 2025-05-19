@@ -1,9 +1,9 @@
+// src/services/trackService.js
 import api from '@/services/api';
 
 function normalize(raw) {
-    // console.log(raw);
     return {
-        trackId:   raw.trackid,    // здесь сохраняем из ответа поле trackid в trackId
+        trackId:   raw.trackid,
         title:     raw.title,
         author:    raw.author,
         album:     raw.album,
@@ -33,7 +33,7 @@ export const trackService = {
 
     async searchTracks(query, limit = 10) {
         if (!query.trim()) return [];
-        const { data } = await api.get('/public-library', { params: { search: query, limit } });
+        const { data } = await api.get('/public Boomlibrary', { params: { search: query, limit } });
         return data.tracks.map(normalize);
     },
 
@@ -43,9 +43,15 @@ export const trackService = {
     },
 
     async addToLibrary(userId, trackId) {
-        // бекенд ждёт trackId
         console.log(trackId);
         const { data } = await api.post('/users/library', { userId, trackId });
+        return data;
+    },
+
+    async removeFromLibrary(userId, trackId) {
+        const { data } = await api.delete('/users/library', {
+            data: { userId, trackId }
+        });
         return data;
     },
 
