@@ -5,14 +5,13 @@ export const useRestorationStore = defineStore('restoration', {
   state: () => ({
     currentStep: 1,
     file: null,
-    trackId: null, // Храним только trackId
+    trackId: null,
     title: '',
     author: '',
     year: '',
     album: '',
     country: '',
     coverUrl: null,
-    restoredAudioUrl: '',
   }),
   actions: {
     setCurrentStep(step) {
@@ -42,9 +41,6 @@ export const useRestorationStore = defineStore('restoration', {
     setCoverUrl(url) {
       this.coverUrl = url;
     },
-    setRestoredAudioUrl(url) {
-      this.restoredAudioUrl = url;
-    },
     async parseAudioMetadata(file) {
       if (!file) return;
       try {
@@ -58,14 +54,23 @@ export const useRestorationStore = defineStore('restoration', {
         this.setAuthor(tags.artist || '');
         this.setYear(tags.year || '');
         this.setAlbum(tags.album || '');
+
         if (tags.picture) {
-          const base64String = btoa(
-            String.fromCharCode(...new Uint8Array(tags.picture.data))
-          );
+          // Преобразуем массив байтов в строку безопасным способом
+          const dataArray = new Uint8Array(tags.picture.data);
+          const chunkSize = 0x8000; // Обрабатываем данные кусками по 32,768 байт
+          let binaryString = '';
+          for (let i = 0; i < dataArray.length; i += chunkSize) {
+            const chunk = dataArray.subarray(i, i + chunkSize);
+            binaryString += String.fromCharCode.apply(null, chunk);
+          }
+          // Кодируем в base64
+          const base64String = btoa(binaryString);
           this.setCoverUrl(`data:${tags.picture.format};base64,${base64String}`);
         } else {
           this.setCoverUrl(null);
         }
+        //aasdf
       } catch (error) {
         console.error('Ошибка парсинга метаданных:', error);
         this.setTitle('');
@@ -85,7 +90,6 @@ export const useRestorationStore = defineStore('restoration', {
       this.album = '';
       this.country = '';
       this.coverUrl = null;
-      this.restoredAudioUrl = '';
     },
   },
 });
