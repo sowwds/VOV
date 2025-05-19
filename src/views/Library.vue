@@ -51,7 +51,7 @@
         </button>
       </div>
       <div
-          class="flex overflow-x-auto space-x-4 pb-4 scrollbar-thin scrollbar-thumb-light-primary dark:scrollbar-thumb-dark-primary"
+          class="flex overflow-x-auto space-x-4 pb-4 scrollbar-thin scrollbar-thumb-light-primary scrollbar-thumb-dark-primary"
       >
         <div v-for="t in popularTracks" :key="t.trackId" class="flex-none w-64">
           <TrackCardLibrary

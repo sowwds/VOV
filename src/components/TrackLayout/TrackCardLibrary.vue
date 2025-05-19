@@ -86,13 +86,23 @@
         <span v-if="track.year"> - {{ track.year }}</span>
       </p>
     </div>
+    <div class="flex flex-row justify-end text-light-text-muted dark:text-dark-text-muted">
+        <div class="flex flex-row mr-2">
+            <HeartIcon :class="['mt-1 v-4 h-4 dark:text-dark-muted text-light-muted']" />
+            {{ track.likes }}
+        </div>
+        <div class="flex flex-row">
+            <PlayCircleIcon :class="['mt-1 v-4 h-4 dark:text-dark-muted text-light-muted']" />
+            {{ track.playCount }}
+        </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { usePlayerStore } from '@/store/player'
-import { PlayIcon, PauseIcon } from '@heroicons/vue/24/outline'
+import { PlayIcon, PauseIcon, HeartIcon, PlayCircleIcon } from '@heroicons/vue/24/outline'
 
 // props: принимаем объект трека и раздел, из которого он вызван
 const { track, section } = defineProps({
