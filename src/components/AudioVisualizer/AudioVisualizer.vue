@@ -186,7 +186,6 @@ const onResize = () => {
   if (canvas.value) {
     canvas.value.width = w;
     canvas.value.height = h;
-    console.log('Canvas resized, width:', w, 'height:', h);
   }
 };
 
@@ -214,7 +213,6 @@ const render = () => {
 
   let frequencySource = dataArray;
   analyser.getByteFrequencyData(frequencySource);
-  console.log('Rendering, frequencySource sample:', frequencySource[0]);
 
   let sortArray = false;
 

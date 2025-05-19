@@ -28,9 +28,9 @@ const routes = [
     children: [
       { path: '', name: 'Главная', component: Home },
       { path: 'restoration', name: 'Реставрация', component: Restoration },
-      { path: 'collection', name: 'Коллекция', component: Collection },
+      { path: 'collection', name: 'Коллекция', component: Collection, meta: {keepAlive: true}},
       { path: 'profile-settings', name: 'Настройки профиля', component: ProfileSettings },
-      { path: 'library', name: 'Library', component: Library },
+      { path: 'library', name: 'Library', component: Library, meta: {keepAlive: true} },
       { path: 'map', name: 'WW2Map', component: WW2Map },
     ],
   },

@@ -5,7 +5,7 @@
       <!-- ЛЕВАЯ СЕКЦИЯ: обложка + название + автор -->
       <div class="flex items-center space-x-3 w-1/4 min-w-[200px]">
         <img
-          :src="currentTrack?.coverurl || defaultCover"
+          :src="currentTrack?.coverUrl || defaultCover"
           alt="Cover"
           class="w-12 h-12 object-cover rounded bg-gray-100 dark:bg-gray-700"
         />
@@ -300,15 +300,20 @@
 
   // sync track src
   watch(
-    () => playerStore.currentTrack,
-    (track) => {
-      if (audio.value && track?.streamUrl) {
-        audio.value.src = track.streamUrl
-        if (playerStore.isPlaying) audio.value.play().catch(() => {})
-      }
-    },
-    { deep: true }
-  )
+      () => playerStore.currentTrack,
+      (newTrack, oldTrack) => {
+        if (audio.value && newTrack?.streamUrl) {
+          // Проверяем, изменился ли trackId или streamUrl
+          if (!oldTrack || newTrack.trackId !== oldTrack.trackId || newTrack.streamUrl !== audio.value.src) {
+            audio.value.src = newTrack.streamUrl;
+            if (playerStore.isPlaying) {
+              audio.value.play().catch(() => {});
+            }
+          }
+        }
+      },
+      { deep: true }
+  );
 
   // methods
   async function onToggleLibrary() {
