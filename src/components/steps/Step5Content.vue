@@ -4,6 +4,9 @@ import { useRestorationStore } from '@/store/restoration';
 import { useAuthStore } from '@/store/auth';
 import IconArrowLeft from '@/components/icons/IconArrowLeft.vue';
 import axios from 'axios';
+import {useToast} from "vue-toastification";
+
+const toast       = useToast()
 
 defineProps({
   goToPreviousStep: {
@@ -51,7 +54,7 @@ const addToCollection = async () => {
         'Content-Type': 'application/json',
       },
     });
-    alert('Трек добавлен в вашу коллекцию!');
+    toast.success('Трек добавлен в вашу коллекцию!');
   } catch (err) {
     console.error('Failed to add to collection:', err);
     error.value = 'Не удалось добавить трек в коллекцию.';
@@ -73,7 +76,7 @@ const publishTrack = async () => {
         'Content-Type': 'application/json',
       },
     });
-    alert('Трек опубликован!');
+    toast.success('Трек опубликован!');
   } catch (err) {
     console.error('Failed to publish track:', err);
     if (err.response) {

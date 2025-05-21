@@ -17,13 +17,14 @@
         <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Сейчас играет</h4>
         <div
             class="flex items-center p-2 rounded-lg bg-light-primary/40 dark:bg-dark-primary/50"
+            :class="{ 'current-playing': isCurrentPlaying(currentTrack) }"
         >
           <img :src="currentTrack.coverUrl" class="w-10 h-10 rounded mr-3 object-cover" alt="Cover"/>
           <div class="flex-1">
             <p class="text-sm font-medium text-light-text dark:text-dark-text truncate">{{ currentTrack.title }}</p>
             <p class="text-xs text-light-text-muted dark:text-dark-text-muted truncate">{{ currentTrack.author }}</p>
           </div>
-          <button @click.stop="handlePlayClick(currentTrack)" class="ml-2 text-green-600 hover:text-green-800">
+          <button @click.stop="handlePlayClick(currentTrack)" class="ml-2 text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200">
             <component :is="isCurrentPlaying(currentTrack) ? PauseIcon : PlayIcon" class="h-5 w-5"/>
           </button>
         </div>
@@ -33,54 +34,65 @@
     <!-- Секция: Пользовательская очередь -->
     <div v-if="customTracks.length" class="mb-4">
       <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Добавлено мной</h4>
-      <transition-group name="list" tag="ul" class="space-y-2 mb-4">
-        <li
-            v-for="track in customTracks"
-            :key="track.trackId"
-            class="flex items-center p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-        >
-          <span class="w-5 text-xs text-gray-500 dark:text-gray-400 mr-1">{{ customIndex(track) + 1 }}</span>
-          <img :src="track.coverUrl" class="w-8 h-8 rounded-full mr-3 object-cover" />
-          <div class="flex-1">
-            <p class="text-sm text-light-text dark:text-dark-text truncate">{{ track.title }}</p>
-            <p class="text-xs text-light-text-muted dark:text-dark-text-muted truncate">{{ track.author }}</p>
-          </div>
-          <button @click.stop="handlePlayClick(track)" class="text-green-600 hover:text-green-800">
-            <component :is="isCurrentPlaying(track) ? PauseIcon : PlayIcon" class="h-5 w-5"/>
-          </button>
-        </li>
-      </transition-group>
+      <draggable
+          v-model="customTracks"
+          item-key="trackId"
+          tag="ul"
+          class="space-y-2 mb-4"
+          animation="300"
+          handle=".draggable-item"
+          :group="'queue'"
+          :key="'custom-tracks'"
+      >
+        <template #item="{ element: track, index: idx }">
+          <li
+              class="flex items-center p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 cursor-move draggable-item"
+              :class="{ 'bg-green-100 dark:bg-green-900/50 ring-2 ring-green-400 dark:ring-green-600': isCurrentPlaying(track) }"
+          >
+            <span class="w-5 text-xs text-gray-500 dark:text-gray-400 mr-1">{{ idx + 1 }}</span>
+            <img :src="track.coverUrl" class="w-8 h-8 rounded-full mr-3 object-cover" />
+            <div class="flex-1">
+              <p class="text-sm text-light-text dark:text-dark-text truncate">{{ track.title }}</p>
+              <p class="text-xs text-light-text-muted dark:text-dark-text-muted truncate">{{ track.author }}</p>
+            </div>
+            <button @click.stop="handlePlayClick(track)" class="text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200">
+              <component :is="isCurrentPlaying(track) ? PauseIcon : PlayIcon" class="h-5 w-5"/>
+            </button>
+          </li>
+        </template>
+      </draggable>
     </div>
 
     <!-- Секция: Остальная очередь -->
     <div v-if="upcomingTracks.length">
       <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Далее в очереди</h4>
-      <transition-group
-          name="list"
+      <draggable
+          v-model="upcomingTracks"
+          item-key="trackId"
           tag="ul"
           class="space-y-2 max-h-64 overflow-y-auto"
+          animation="300"
+          handle=".draggable-item"
+          :group="'queue'"
+          :key="'upcoming-tracks'"
       >
-        <li
-            v-for="(track, idx) in upcomingTracks"
-            :key="track.trackId"
-            draggable="true"
-            @dragstart="handleDragStart($event, idx)"
-            @dragover.prevent="handleDragOver($event, idx)"
-            @drop="handleDrop($event, idx)"
-            @dragenter.prevent
-            class="flex items-center p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 cursor-move"
-        >
-          <span class="w-5 text-xs text-gray-500 dark:text-gray-400 mr-1">{{ idx + 1 }}</span>
-          <img :src="track.coverUrl" class="w-8 h-8 rounded-full mr-3 object-cover" />
-          <div class="flex-1">
-            <p class="text-sm text-light-text dark:text-dark-text truncate">{{ track.title }}</p>
-            <p class="text-xs text-light-text-muted dark:text-dark-text-muted truncate">{{ track.author }}</p>
-          </div>
-          <button @click.stop="handlePlayClick(track)" class="text-green-600 hover:text-green-800">
-            <component :is="isCurrentPlaying(track) ? PauseIcon : PlayIcon" class="h-5 w-5"/>
-          </button>
-        </li>
-      </transition-group>
+        <template #item="{ element: track, index: idx }">
+          <li
+              class="flex items-center p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 cursor-move draggable-item"
+              :class="{ 'bg-green-100 dark:bg-green-900/50 ring-2 ring-green-400 dark:ring-green-600': isCurrentPlaying(track) }"
+          >
+            <span class="w-5 text-xs text-gray-500 dark:text-gray-400 mr-1">{{ idx + 1 }}</span>
+            <img :src="track.coverUrl" class="w-8 h-8 rounded-full mr-3 object-cover" />
+            <div class="flex-1">
+              <p class="text-sm text-light-text dark:text-dark-text truncate">{{ track.title }}</p>
+              <p class="text-xs text-light-text-muted dark:text-dark-text-muted truncate">{{ track.author }}</p>
+            </div>
+            <button @click.stop="handlePlayClick(track)" class="text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200">
+              <component :is="isCurrentPlaying(track) ? PauseIcon : PlayIcon" class="h-5 w-5"/>
+            </button>
+          </li>
+        </template>
+      </draggable>
     </div>
 
     <!-- Кнопка очистить -->
@@ -94,90 +106,139 @@
 </template>
 
 <script setup>
-import {computed, ref, watch, onMounted, onBeforeUnmount} from 'vue';
+import { computed } from 'vue';
 import { usePlayerStore } from '@/store/player';
 import { useTrackStore } from '@/store/track';
 import { PlayIcon, PauseIcon } from '@heroicons/vue/24/outline';
 import { trackService } from '@/services/trackService';
+import draggable from 'vuedraggable';
 
 const emit = defineEmits(['close']);
 const player = usePlayerStore();
 const trackStore = useTrackStore();
 
+// Cache tracks for efficient lookup
+const trackMap = computed(() => {
+  const map = new Map();
+  [
+    ...trackStore.userLibrary,
+    ...trackStore.topPlays,
+    ...trackStore.topLikes,
+    ...trackStore.newTracks,
+    ...trackStore.searchResults,
+  ].forEach((track) => map.set(track.trackId, track));
+  return map;
+});
+
 const queueTracks = computed(() =>
-    player.queueTracks.map(id => {
-      const t = [
-        ...trackStore.userLibrary,
-        ...trackStore.topPlays,
-        ...trackStore.topLikes,
-        ...trackStore.newTracks,
-        ...trackStore.searchResults
-      ].find(x => x.trackId === id);
+    player.queueTracks.map((id) => {
+      const t = trackMap.value.get(id);
       return t
-          ? { ...t, streamUrl: trackService.getStreamUrl(t.trackId) }
-          : { trackId: id, title: '…', author: '', coverUrl: '', streamUrl: trackService.getStreamUrl(id) };
+          ? { ...t, streamUrl: trackService.getStreamUrl(t.trackId) || '' }
+          : { trackId: id, title: '…', author: '', coverUrl: '', streamUrl: '' };
     })
 );
 
 const currentTrack = computed(() =>
-    queueTracks.value.find(t => t.trackId === player.currentTrackId) || null
+    queueTracks.value.find((t) => t.trackId === player.currentTrackId) || null
 );
 
-const customTracks = computed(() =>
-    queueTracks.value.filter(t => player.customQueue.includes(t.trackId))
-        .filter(t => t.trackId !== player.currentTrackId)
-);
+const customTracks = computed({
+  get: () =>
+      queueTracks.value
+          .filter((t) => player.customQueue.includes(t.trackId))
+          .filter((t) => t.trackId !== player.currentTrackId),
+  set: (newTracks) => {
+    if (!Array.isArray(newTracks) || newTracks.some((track) => !track || !track.trackId)) {
+      console.error('Invalid customTracks:', newTracks);
+      return;
+    }
+    // Update customQueue and queueTracks
+    const newCustomQueue = newTracks.map((track) => track.trackId);
+    const newQueue = [
+      ...(player.currentTrackId ? [player.currentTrackId] : []),
+      ...newCustomQueue,
+      ...player.baseQueue.filter((id) => !newCustomQueue.includes(id)),
+    ];
+    player.customQueue = newCustomQueue;
+    player.queueTracks = newQueue;
+  },
+});
 
-const upcomingTracks = computed(() =>
-    queueTracks.value.filter(t =>
-        t.trackId !== player.currentTrackId && !player.customQueue.includes(t.trackId)
-    )
-);
+const upcomingTracks = computed({
+  get: () =>
+      queueTracks.value.filter(
+          (t) =>
+              t.trackId !== player.currentTrackId &&
+              !player.customQueue.includes(t.trackId)
+      ),
+  set: (newTracks) => {
+    if (!Array.isArray(newTracks) || newTracks.some((track) => !track || !track.trackId)) {
+      console.error('Invalid upcomingTracks:', newTracks);
+      return;
+    }
+    // Update baseQueue and queueTracks
+    const newBaseQueue = newTracks.map((track) => track.trackId);
+    const newQueue = [
+      ...(player.currentTrackId ? [player.currentTrackId] : []),
+      ...player.customQueue,
+      ...newBaseQueue,
+    ];
+    player.baseQueue = newBaseQueue;
+    player.queueTracks = newQueue;
+  },
+});
 
 const isCurrentPlaying = (t) => player.currentTrackId === t.trackId && player.isPlaying;
-const handlePlayClick = (t) => {
-  player.playTrack(t.trackId);
+
+const handlePlayClick = (track) => {
+  if (isCurrentPlaying(track)) {
+    player.pause();
+  } else {
+    player.playTrack(track.trackId);
+  }
 };
+
 const clearAll = () => {
   player.clearQueue();
 };
-// объединённый метод
+
 function clearAndClose() {
   clearAll();
   emit('close');
 }
-const customIndex = (t) => customTracks.value.findIndex(x => x.trackId === t.trackId);
-
-function handleDragStart(e, idx) {
-  e.dataTransfer.setData('text/plain', idx);
-}
-function handleDragOver(e, idx) {
-  e.preventDefault();
-}
-function handleDrop(e, idx) {
-  e.preventDefault();
-  const fromIndex = e.dataTransfer.getData('text/plain');
-  player.moveInQueue(parseInt(fromIndex), idx);
-}
-
-
-
-
 </script>
 
 <style scoped>
 /* Анимация для текущего трека */
 .track-slide-enter-active,
 .track-slide-leave-active {
-  transition: all 0.3s ease;
+  transition: all 0.5s ease;
 }
 .track-slide-enter-from {
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateY(-20px) scale(0.95);
 }
 .track-slide-leave-to {
   opacity: 0;
-  transform: translateX(100%);
+  transform: translateX(100%) scale(0.95);
+}
+
+/* Эффект свечения для текущего трека */
+/* Светлая тема */
+.bg-light-primary\/40 {
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+.bg-light-primary\/40.current-playing {
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.8);
+}
+
+/* Темная тема */
+.dark .bg-dark-primary\/50 {
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+.dark .bg-dark-primary\/50.current-playing {
+  box-shadow: 0 0 10px rgba(20, 184, 166, 0.7);
 }
 
 /* Анимация для списков */
@@ -196,15 +257,27 @@ function handleDrop(e, idx) {
 }
 .list-leave-active {
   position: absolute;
+  width: 100%;
 }
 
-/* Остальные стили */
-li {
-  transition: background-color 0.2s, transform 0.2s;
+/* Стили для перетаскивания */
+.draggable-item {
+  transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
 }
-li[draggable="true"]:active {
+.draggable-item:hover {
+  cursor: grab;
+}
+.draggable-item:active {
   cursor: grabbing;
 }
+
+/* Выделение текущего трека в списках */
+.draggable-item.bg-green-100,
+.draggable-item.dark\:bg-green-900\/50 {
+  transition: background-color 0.3s ease, ring 0.3s ease;
+}
+
+/* Стили скроллбара */
 ::-webkit-scrollbar {
   width: 6px;
 }

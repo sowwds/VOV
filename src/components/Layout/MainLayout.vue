@@ -1,9 +1,8 @@
 <template>
   <div class="flex h-screen overflow-hidden flex-col">
-
     <AudioVisualizer />
-
     <Header @toggleDrawer="toggleDrawer" :drawerOpen="drawerOpen" />
+
     <!-- Mobile overlay -->
     <transition name="fade">
       <div
@@ -61,8 +60,6 @@
         </div>
       </div>
 
-
-
       <!-- Sidebar -->
       <transition name="slide">
         <aside
@@ -76,48 +73,76 @@
 
       <!-- Page content with larger padding -->
       <main
-          class="pt-16 flex-1 overflow-auto
-          px-8 md:px-12 lg:px-16 pb-6 transition-all duration-500 "
+          class="pt-16 flex-1 overflow-auto px-8 md:px-12 lg:px-16 pb-6 transition-all duration-500"
           :class="{ 'md:pl-16': drawerOpen }"
           @click="closeSidebarOnMobile"
       >
         <router-view />
       </main>
 
-
       <!-- Music player -->
-      <footer class="flex-shrink-0">
+      <footer v-if="!musicStore.isSidebarVisible" class="flex-shrink-0">
         <MusicBar />
       </footer>
+
+      <!-- Если сайдбар открыт, телепортим его в <body> -->
+      <Teleport to="body">
+        <MusicSidebar v-if="musicStore.isSidebarVisible" />
+      </Teleport>
     </div>
+
+    <!-- Общий audio элемент -->
+    <audio
+        ref="audio"
+        crossorigin="anonymous"
+        preload="metadata"
+        class="hidden"
+    ></audio>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import Sidebar from '@/components/Sidebar/Sidebar.vue'
-import MusicBar from '@/components/Music/MusicBar.vue'
-import Header from "@/components/Header/Header.vue";
-import AudioVisualizer from "@/components/AudioVisualizer/AudioVisualizer.vue";
-import ZenitTracers from "@/components/AudioVisualizer/ZenitTracers.vue";
+import { ref, onMounted, onUnmounted } from 'vue';
+import Sidebar from '@/components/Sidebar/Sidebar.vue';
+import MusicBar from '@/components/Music/MusicBar.vue';
+import MusicSidebar from '@/components/Music/MusicSidebar.vue';
+import Header from '@/components/Header/Header.vue';
+import AudioVisualizer from '@/components/AudioVisualizer/AudioVisualizer.vue';
+import { useMusicStore } from '@/store/music';
+import { usePlayerStore } from '@/store/player';
 
-const drawerOpen = ref(false)
+const musicStore = useMusicStore();
+const playerStore = usePlayerStore();
+const drawerOpen = ref(false);
+const audio = ref(null);
 
 function toggleDrawer() {
-  drawerOpen.value = !drawerOpen.value
+  drawerOpen.value = !drawerOpen.value;
 }
 
 function closeSidebar() {
   if (window.innerWidth >= 768) {
-    drawerOpen.value = false
+    drawerOpen.value = false;
   }
 }
 
 function closeSidebarOnMobile() {
   if (window.innerWidth < 768 && drawerOpen.value) {
-    drawerOpen.value = false
+    drawerOpen.value = false;
   }
 }
+
+// Инициализация audio в playerStore
+onMounted(() => {
+  if (audio.value) {
+    playerStore.setAudioElement(audio.value);
+  }
+});
+
+// Очистка при размонтировании
+onUnmounted(() => {
+  playerStore.setAudioElement(null);
+});
 </script>
 
 <style scoped>
