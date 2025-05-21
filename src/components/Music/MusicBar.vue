@@ -123,7 +123,7 @@
               v-model.number="currentTime"
               @input="onSeek"
               class="flex-1 progress-bar-time"
-              :style="{ '--progress': `${(currentTime / duration) * 100}%` }"
+              :style="{ '--progress': `${(currentTime / duration) * 100}%`, '--buffered-progress': `${bufferedProgress}%` }"
           />
           <span class="text-xs text-light-text dark:text-dark-text">{{ formatTime(duration) }}</span>
         </div>
@@ -219,252 +219,224 @@
     ></audio>
   </template>
 
-  <script setup>
-  import QueuePopOver from '@/components/Music/QueuePopOver.vue';
-  import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-  import { usePlayerStore } from '@/store/player';
-  import { useTrackStore } from '@/store/track';
-  import { useToast } from 'vue-toastification';
-  import { throttle } from 'lodash';
-  import {
-    HeartIcon,
-    PlayIcon,
-    PauseIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
-    ArrowPathRoundedSquareIcon,
-    MicrophoneIcon,
-    ArrowsPointingOutIcon,
-    SpeakerWaveIcon,
-    SpeakerXMarkIcon,
-    QueueListIcon,
-    InformationCircleIcon,
-  } from '@heroicons/vue/24/outline';
+<script setup>
+import QueuePopOver from '@/components/Music/QueuePopOver.vue';
+import { ref, computed } from 'vue';
+import { usePlayerStore } from '@/store/player';
+import { useTrackStore } from '@/store/track';
+import { useMusicStore } from '@/store/music.js';
+import { useToast } from 'vue-toastification';
+import {
+  HeartIcon,
+  PlayIcon,
+  PauseIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ArrowPathRoundedSquareIcon,
+  MicrophoneIcon,
+  ArrowsPointingOutIcon,
+  SpeakerWaveIcon,
+  SpeakerXMarkIcon,
+  QueueListIcon,
+  InformationCircleIcon,
+} from '@heroicons/vue/24/outline';
 
-  const playerStore = usePlayerStore();
-  const trackStore = useTrackStore();
-  const toast = useToast();
+const playerStore = usePlayerStore();
+const trackStore = useTrackStore();
+const musicStore = useMusicStore();
+const toast = useToast();
 
-  // state & refs
-  const audio = ref(null);
-  const currentTime = ref(0);
-  const duration = ref(0);
-  const volume = ref(0.5);
-  const isMuted = ref(false);
-  const showVolumeHint = ref(false);
-  const showQueue = ref(false);
-  const showInfoTooltip = ref(false);
-  const currentVersion = ref('processed');
-  const defaultCover = 'https://via.placeholder.com/48';
+// State & refs
+const showVolumeHint = ref(false);
+const showQueue = ref(false);
+const showInfoTooltip = ref(false);
+const currentVersion = ref('processed');
+const defaultCover = 'https://via.placeholder.com/48';
 
-  // computed
-  const currentTrack = computed(() => playerStore.currentTrack);
-  const isInLibrary = computed(() =>
+// Computed properties from playerStore
+const currentTrack = computed(() => playerStore.currentTrack);
+const isInLibrary = computed(() =>
     currentTrack.value && trackStore.userLibrary.some(t => t.trackId === currentTrack.value.trackId)
-  );
-  const shuffleClass = computed(() =>
-    playerStore.shuffleActive
-      ? 'text-light-primary dark:text-dark-primary'
-      : 'text-light-text dark:text-dark-text'
-  );
-  const loopClass = computed(() =>
+);
+const loopClass = computed(() =>
     playerStore.loopMode === 'none'
-      ? 'text-light-text dark:text-dark-text'
-      : 'text-light-primary dark:text-dark-primary'
-  );
+        ? 'text-light-text dark:text-dark-text'
+        : 'text-light-primary dark:text-dark-primary'
+);
+const currentTime = computed({
+  get: () => playerStore.currentTime,
+  set: (value) => playerStore.seek(value),
+});
+const duration = computed(() => playerStore.duration);
+const volume = computed({
+  get: () => playerStore.volume,
+  set: (value) => playerStore.updateVolume(value),
+});
+const isMuted = computed(() => playerStore.isMuted);
+const bufferedProgress = computed(() => playerStore.bufferedProgress);
 
-  // mount audio
-  onMounted(() => {
-    if (!audio.value) return;
-    playerStore.setAudioElement(audio.value);
-    audio.value.volume = isMuted.value ? 0 : volume.value;
-
-    audio.value.onloadedmetadata = () => {
-      duration.value = audio.value.duration || 0;
-      currentTime.value = 0;
-    };
-    audio.value.ontimeupdate = throttle(() => {
-      currentTime.value = audio.value.currentTime;
-    }, 200);
-    audio.value.onended = () => {
-      if (playerStore.loopMode !== 'one') playerStore.nextTrack();
-    };
-    audio.value.onplay = () => (playerStore.isPlaying = true);
-    audio.value.onpause = () => (playerStore.isPlaying = false);
-  });
-
-  // sync track src
-  watch(
-    () => playerStore.currentTrack,
-    (newTrack, oldTrack) => {
-      if (audio.value && newTrack?.streamUrl) {
-        if (!oldTrack || newTrack.trackId !== oldTrack.trackId || newTrack.streamUrl !== audio.value.src) {
-          audio.value.src = newTrack.streamUrl;
-          if (playerStore.isPlaying) {
-            audio.value.play().catch(() => {});
-          }
-        }
-      }
-    },
-    { deep: true }
-  );
-
-  // methods
-  async function onToggleLibrary() {
-    if (!currentTrack.value) return;
-    try {
-      if (isInLibrary.value) {
-        await trackStore.removeFromLibrary(currentTrack.value.trackId);
-        toast.success('Трек удален из коллекции!');
-      } else {
-        await trackStore.addToLibrary(currentTrack.value.trackId);
-        toast.success('Трек добавлен в коллекцию!');
-      }
-    } catch (e) {
-      console.error('Не удалось обновить библиотеку:', e);
-      toast.error('Не удалось обновить коллекцию');
+// Methods
+async function onToggleLibrary() {
+  if (!currentTrack.value) return;
+  try {
+    if (isInLibrary.value) {
+      await trackStore.removeFromLibrary(currentTrack.value.trackId);
+      toast.success('Трек удален из коллекции!');
+    } else {
+      await trackStore.addToLibrary(currentTrack.value.trackId);
+      toast.success('Трек добавлен в коллекцию!');
     }
+  } catch (e) {
+    console.error('Не удалось обновить библиотеку:', e);
+    toast.error('Не удалось обновить коллекцию');
   }
+}
 
-  function onShuffle() {
-    playerStore.toggleShuffle();
-  }
+function onShuffle() {
+  playerStore.toggleShuffle();
+}
 
-  function onPrev() {
-    playerStore.prevTrack();
-  }
+function onPrev() {
+  playerStore.prevTrack();
+}
 
-  function onTogglePlay() {
-    playerStore.isPlaying ? playerStore.pause() : playerStore.play();
-  }
+function onTogglePlay() {
+  playerStore.isPlaying ? playerStore.pause() : playerStore.play();
+}
 
-  function onNext() {
-    playerStore.nextTrack();
-  }
+function onNext() {
+  playerStore.nextTrack();
+}
 
-  function onToggleLoop() {
-    playerStore.toggleLoopMode();
-  }
+function onToggleLoop() {
+  playerStore.toggleLoopMode();
+}
 
-  function onToggleVersion() {
-    currentVersion.value = currentVersion.value === 'processed' ? 'original' : 'processed';
-  }
+function onToggleVersion() {
+  currentVersion.value = currentVersion.value === 'processed' ? 'original' : 'processed';
+}
 
-  function onToggleQueue() {
-    showQueue.value = !showQueue.value;
-  }
+function onToggleQueue() {
+  showQueue.value = !showQueue.value;
+}
 
-  function onSpeechToText() {
-    /* TODO */
-  }
+function onSpeechToText() {
+  /* TODO */
+}
 
-  function onToggleFloat() {
-    /* TODO */
-  }
+function onToggleFloat() {
+  musicStore.toggleSidebar();
+}
 
-  function onSeek() {
-    if (audio.value) audio.value.currentTime = currentTime.value;
-  }
+function onSeek() {
+  playerStore.seek(currentTime.value);
+}
 
-  function onUpdateVolume() {
-    isMuted.value = volume.value === 0;
-    if (audio.value) audio.value.volume = volume.value;
-  }
+function onUpdateVolume() {
+  playerStore.updateVolume(volume.value);
+}
 
-  function onToggleMute() {
-    isMuted.value = !isMuted.value;
-    if (audio.value) audio.value.volume = isMuted.value ? 0 : volume.value;
-  }
+function onToggleMute() {
+  playerStore.toggleMute();
+}
 
-  function formatTime(sec = 0) {
-    const m = String(Math.floor(sec / 60)).padStart(2, '0');
-    const s = String(Math.floor(sec % 60)).padStart(2, '0');
-    return `${m}:${s}`;
-  }
+function formatTime(sec = 0) {
+  const m = String(Math.floor(sec / 60)).padStart(2, '0');
+  const s = String(Math.floor(sec % 60)).padStart(2, '0');
+  return `${m}:${s}`;
+}
+</script>
 
-  onUnmounted(() => {
-    if (audio.value?.ontimeupdate) throttle.cancel?.();
-  });
-  </script>
+<style scoped>
+:root {
+  --progress: 0%;
+  --buffered-progress: 0%;
+}
+input[type="range"] {
+  appearance: none;
+  border-radius: 9999px;
+  height: 0.25rem;
+  background-color: #d1d5db;
+  background-repeat: no-repeat;
+  background-image:
+    /* 1) прогресс прослушанного поверх */
+      linear-gradient(to right, #6366f1 var(--progress, 0%), transparent var(--progress, 0%)),
+        /* 2) буфер под ним */
+      linear-gradient(to right, #9ca3af var(--buffered-progress, 0%), transparent var(--buffered-progress, 0%));
+}
 
-  <style scoped>
-  :root {
-    --progress: 0%;
-  }
-  input[type="range"] {
-    appearance: none;
-    border-radius: 9999px;
-    height: 0.25rem;
-    background-color: #d1d5db;
-    background-image: linear-gradient(to right, #6366f1 var(--progress, 0%), transparent 0);
-    background-repeat: no-repeat;
-  }
-  .dark input[type="range"] {
-    background-color: #4b5563;
-    background-image: linear-gradient(to right, #8b5cf6 var(--progress, 0%), transparent 0);
-  }
-  input[type="range"]::-webkit-slider-thumb {
-    appearance: none;
-    border-radius: 9999px;
-    height: 0.75rem;
-    width: 0.75rem;
-    background-color: #6366f1;
-    cursor: pointer;
-  }
-  .dark input[type="range"]::-webkit-slider-thumb {
-    background-color: #8b5cf6;
-  }
-  input[type="range"]::-moz-range-thumb {
-    border-radius: 9999px;
-    height: 0.75rem;
-    width: 0.75rem;
-    background-color: #6366f1;
-    cursor: pointer;
-    border: none;
-  }
-  .dark input[type="range"]::-moz-range-thumb {
-    background-color: #8b5cf6;
-  }
-  input[type="range"]::-moz-range-progress {
-    background-color: #6366f1;
-    border-radius: 9999px;
-    height: 0.25rem;
-  }
-  .dark input[type="range"]::-moz-range-progress {
-    background-color: #8b5cf6;
-  }
-  .progress-bar-volume {
-    appearance: none;
-    height: 0.25rem;
-    background-color: #d1d5db;
-    background-image: linear-gradient(to right, #6366f1 var(--progress), transparent 0);
-    border-radius: 9999px;
-  }
-  .dark .progress-bar-volume {
-    background-color: #4b5563;
-    background-image: linear-gradient(to right, #8b5cf6 var(--progress), transparent 0);
-  }
-  .progress-bar-volume::-webkit-slider-thumb {
-    appearance: none;
-    width: 0.75rem;
-    height: 0.75rem;
-    border-radius: 9999px;
-    background-color: #6366f1;
-    cursor: pointer;
-  }
-  .dark .progress-bar-volume::-webkit-slider-thumb {
-    background-color: #8b5cf6;
-  }
-  .fade-enter-active,
-  .fade-leave-active {
-    transition: opacity 0.15s ease, transform 0.15s ease;
-  }
-  .fade-enter-from,
-  .fade-leave-to {
-    opacity: 0;
-    transform: translateY(2px) translateX(-50%);
-  }
-  .icon-offset {
-    transform: translateX(1px);
-  }
-  </style>
+.dark input[type="range"] {
+  background-color: #4b5563;
+  background-repeat: no-repeat;
+  background-image:
+    /* 1) прогресс прослушанного (тёмная тема) */
+      linear-gradient(to right, #8b5cf6 var(--progress, 0%), transparent var(--progress, 0%)),
+        /* 2) буфер (тёмная тема) */
+      linear-gradient(to right, #6b7280 var(--buffered-progress, 0%), transparent var(--buffered-progress, 0%));
+}
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  border-radius: 9999px;
+  height: 0.75rem;
+  width: 0.75rem;
+  background-color: #6366f1;
+  cursor: pointer;
+}
+.dark input[type="range"]::-webkit-slider-thumb {
+  background-color: #8b5cf6;
+}
+input[type="range"]::-moz-range-thumb {
+  border-radius: 9999px;
+  height: 0.75rem;
+  width: 0.75rem;
+  background-color: #6366f1;
+  cursor: pointer;
+  border: none;
+}
+.dark input[type="range"]::-moz-range-thumb {
+  background-color: #8b5cf6;
+}
+input[type="range"]::-moz-range-progress {
+  background-color: #6366f1;
+  border-radius: 9999px;
+  height: 0.25rem;
+}
+.dark input[type="range"]::-moz-range-progress {
+  background-color: #8b5cf6;
+}
+/* Остальные стили без изменений */
+.progress-bar-volume {
+  appearance: none;
+  height: 0.25rem;
+  background-color: #d1d5db;
+  background-image: linear-gradient(to right, #6366f1 var(--progress), transparent 0);
+  border-radius: 9999px;
+}
+.dark .progress-bar-volume {
+  background-color: #4b5563;
+  background-image: linear-gradient(to right, #8b5cf6 var(--progress), transparent 0);
+}
+.progress-bar-volume::-webkit-slider-thumb {
+  appearance: none;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 9999px;
+  background-color: #6366f1;
+  cursor: pointer;
+}
+.dark .progress-bar-volume::-webkit-slider-thumb {
+  background-color: #8b5cf6;
+}
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(2px) translateX(-50%);
+}
+.icon-offset {
+  transform: translateX(1px);
+}
+</style>
