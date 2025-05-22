@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRestorationStore } from '@/store/restoration';
 import { useAuthStore } from '@/store/auth';
 import IconArrowLeft from '@/components/icons/IconArrowLeft.vue';
-import axios from 'axios';
+import api from '@/services/api'; // Импорт api вместо axios
 
 defineProps({
   goToPreviousStep: {
@@ -96,10 +96,9 @@ const uploadFiles = async () => {
     formData.append('userId', authStore.user.id); // Используем user.id
 
     try {
-      const response = await axios.post('http://localhost:5000/restoration/upload', formData, {
+      const response = await api.post('/restoration/upload', formData, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('jwt')}`,
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': 'multipart/form-data', // Оставляем только Content-Type, Authorization добавит интерцептор
         },
       });
       restorationStore.setTrackId(response.data.id);

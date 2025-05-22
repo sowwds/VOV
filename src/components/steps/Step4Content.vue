@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue';
 import { useRestorationStore } from '@/store/restoration';
 import IconArrowLeft from '@/components/icons/IconArrowLeft.vue';
-import axios from 'axios';
+import api from '@/services/api'; // Импорт api вместо axios
 
 defineProps({
   goToPreviousStep: {
@@ -130,10 +130,9 @@ const goToNext = async () => {
     };
 
     try {
-      await axios.post('http://localhost:5000/restoration/metadata', metadata, {
+      await api.post('/restoration/metadata', metadata, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('jwt')}`,
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json', // Оставляем только Content-Type, Authorization добавит интерцептор
         },
       });
       restorationStore.setCurrentStep(5);

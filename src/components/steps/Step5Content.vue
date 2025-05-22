@@ -3,10 +3,10 @@ import { computed, onMounted, ref } from 'vue';
 import { useRestorationStore } from '@/store/restoration';
 import { useAuthStore } from '@/store/auth';
 import IconArrowLeft from '@/components/icons/IconArrowLeft.vue';
-import axios from 'axios';
-import {useToast} from "vue-toastification";
+import api from '@/services/api'; // Импорт api вместо axios
+import { useToast } from 'vue-toastification';
 
-const toast       = useToast()
+const toast = useToast();
 
 defineProps({
   goToPreviousStep: {
@@ -34,8 +34,8 @@ const metadata = computed(() => ({
   album: restorationStore.album || 'Не указан',
   country: restorationStore.country || 'Не указана',
   cover: restorationStore.coverUrl || 'https://via.placeholder.com/150',
-  streamUrl: restorationStore.trackId ? `http://localhost:5000/restoration/stream/${restorationStore.trackId}` : 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-  downloadUrl: restorationStore.trackId ? `http://localhost:5000/restoration/download/${restorationStore.trackId}` : null,
+  streamUrl: restorationStore.trackId ? `/restoration/stream/${restorationStore.trackId}` : 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+  downloadUrl: restorationStore.trackId ? `/restoration/download/${restorationStore.trackId}` : null,
 }));
 
 const addToCollection = async () => {
@@ -45,13 +45,12 @@ const addToCollection = async () => {
   }
 
   try {
-    await axios.post('http://localhost:5000/users/library', {
+    await api.post('/users/library', {
       userId: parseInt(authStore.user.id),
       trackId: restorationStore.trackId,
     }, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('jwt')}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json', // Оставляем только Content-Type, Authorization добавит интерцептор
       },
     });
     toast.success('Трек добавлен в вашу коллекцию!');
@@ -68,12 +67,11 @@ const publishTrack = async () => {
   }
 
   try {
-    await axios.post('http://localhost:5000/public-library', {
+    await api.post('/public-library', {
       trackId: restorationStore.trackId,
     }, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('jwt')}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json', // Оставляем только Content-Type, Authorization добавит интерцептор
       },
     });
     toast.success('Трек опубликован!');
@@ -122,9 +120,9 @@ const restart = () => {
         class="flex items-center text-light-text dark:text-dark-text px-2 py-2 rounded cursor-pointer"
         @click="restart"
       >
-      <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M12 5.69l5 4.5V18h-2v-6H9v6H7v-7.81l5-4.5M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/>
-      </svg>
+        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 5.69l5 4.5V18h-2v-6H9v6H7v-7.81l5-4.5M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/>
+        </svg>
       </button>
     </div>
     <h1 class="text-3xl font-bold text-light-text dark:text-dark-text mb-6">Реставрация завершена</h1>
@@ -163,17 +161,17 @@ const restart = () => {
           class="flex items-center text-light-text dark:text-dark-text px-4 py-2 rounded cursor-pointer bg-light-primary dark:bg-dark-primary hover:bg-light-secondary dark:hover:bg-dark-secondary"
           @click="downloadAudio"
         >
-        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
-        </svg>
+          <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+          </svg>
         </button>
         <button
           class="flex items-center text-light-text dark:text-dark-text px-4 py-2 rounded cursor-pointer bg-light-primary dark:bg-dark-primary hover:bg-light-secondary dark:hover:bg-dark-secondary"
           @click="addToCollection"
         >
-        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-        </svg>
+          <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
         </button>
         <button
           class="px-4 py-2 rounded bg-light-primary dark:bg-dark-primary text-dark-text hover:bg-light-secondary dark:hover:bg-dark-secondary"
