@@ -2,7 +2,7 @@
 import { onMounted, onUnmounted, ref } from 'vue';
 import { useRestorationStore } from '@/store/restoration';
 import IconArrowLeft from '@/components/icons/IconArrowLeft.vue';
-import axios from 'axios';
+import api from '@/services/api.js';
 
 defineProps({
   goToPreviousStep: {
@@ -26,7 +26,7 @@ const checkIsReady = async () => {
   }
 
   try {
-    const response = await axios.get(`http://localhost:5000/restoration/isReady?trackId=${restorationStore.trackId}`, {
+    const response = await api.get(`/restoration/isReady?trackId=${restorationStore.trackId}`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('jwt')}`,
       },

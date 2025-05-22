@@ -1,7 +1,10 @@
 import { useAuthStore } from '@/store/auth';
+import api from '@/services/api';
+
 
 export const startLogin = (provider) => {
-  const authUrl = `http://localhost:5000/auth/${provider}`; // Формируем URL для провайдера
+  const baseURL = api.defaults.baseURL || 'http://localhost:5000';
+  const authUrl = `${baseURL}/auth/${provider}`; // Формируем URL для провайдера
   window.location.href = authUrl;
 };
 
