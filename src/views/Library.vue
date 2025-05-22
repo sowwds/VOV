@@ -1,76 +1,26 @@
-<!-- src/views/Library.vue -->
 <template>
     <div class="ml-auto mr-auto w-full max-w-screen-lg text-light-text dark:text-dark-text">
       <!-- Поиск -->
       <div class="flex flex-wrap justify-center mb-10 align-center">
-        <span class="mr-4 my-2">Поиск по трекам</span>
         <SearchInput
           v-model="searchQuery"
           @search="handleSearch"
-          class="max-w-screen-sm w-full"
-          placeholder="Введите название трека"
+          @clear="clearSearch"
+          class="max-w-screen-md w-full"
+          placeholder="Поиск по трекам"
         />
       </div>
 
-      <!-- Результаты поиска -->
-      <div v-if="trackStore.searchResults.length" class="mt-8">
-        <h3 class="text-lg mb-4">Результаты поиска ({{ trackStore.searchTotal }} треков)</h3>
-        <div class="flex flex-col space-y-2">
-          <TrackRow
-            v-for="t in trackStore.searchResults"
-            :key="t.trackId"
-            :track="t"
-            section="searchResults"
-            @add-to-library="addToLibrary"
-            @remove-from-library="removeFromLibrary"
-            @add-to-queue="addToQueue"
-            @play-track="playTrack"
-            @toggle-play="togglePlay"
-            @add-next="addToNext"
-          />
-        </div>
-        <!-- Pagination -->
-        <div v-if="trackStore.searchResults.length < trackStore.searchTotal" class="mt-4 text-center">
-          <button
-            @click="loadMore"
-            class="px-4 py-2 bg-light-primary dark:bg-dark-primary text-white rounded hover:bg-opacity-90 transition"
-          >
-            Загрузить еще
-          </button>
-        </div>
-      </div>
-      <div v-else-if="searchQuery && !trackStore.searchResults.length" class="mt-8 text-center">
-        <p>Треки не найдены</p>
-      </div>
-
-      <!-- Популярные треки -->
-      <div class="flex flex-wrap">
-        <h1 class="text-3xl font-bold text-light-text dark:text-dark-text mb-6 w-full">
-          Слушайте популярное
-        </h1>
-        <div class="flex space-x-4 mb-4">
-          <button
-            @click="popularTab = 'listens'"
-            class="px-4 py-2 text-light-text dark:text-dark-text"
-            :class="{ 'border-b border-light-primary dark:border-dark-primary': popularTab === 'listens' }"
-          >
-            По прослушиваниям
-          </button>
-          <button
-            @click="popularTab = 'likes'"
-            class="px-4 py-2 text-light-text dark:text-dark-text"
-            :class="{ 'border-b border-light-primary dark:border-dark-primary': popularTab === 'likes' }"
-          >
-            По лайкам
-          </button>
-        </div>
-        <div
-          class="flex w-full overflow-x-auto space-x-4 pb-4 scrollbar-thin scrollbar-thumb-light-primary scrollbar-thumb-dark-primary"
-        >
-          <div v-for="t in popularTracks" :key="t.trackId" class="flex-none w-64">
-            <TrackCardLibrary
+      <!-- Контент: результаты поиска или популярные/новые треки -->
+      <div v-if="isSearching">
+        <div v-if="trackStore.searchResults.length" class="mt-8">
+          <h3 class="text-lg mb-4">Результаты поиска ({{ trackStore.searchTotal }} треков)</h3>
+          <div class="flex flex-col space-y-2">
+            <TrackRow
+              v-for="t in trackStore.searchResults"
+              :key="t.trackId"
               :track="t"
-              :section="popularTab === 'listens' ? 'topPlays' : 'topLikes'"
+              section="searchResults"
               @add-to-library="addToLibrary"
               @remove-from-library="removeFromLibrary"
               @add-to-queue="addToQueue"
@@ -79,25 +29,77 @@
               @add-next="addToNext"
             />
           </div>
+          <!-- Pagination -->
+          <div v-if="trackStore.searchResults.length < trackStore.searchTotal" class="mt-4 text-center">
+            <button
+              @click="loadMore"
+              class="px-4 py-2 bg-light-primary dark:bg-dark-primary text-white rounded hover:bg-opacity-90 transition"
+            >
+              Загрузить еще
+            </button>
+          </div>
+        </div>
+        <div v-else class="mt-8 text-center">
+          <p>Треки не найдены</p>
         </div>
       </div>
+      <div v-else>
+        <!-- Популярные треки -->
+        <div class="flex flex-wrap">
+          <h1 class="text-3xl font-bold text-light-text dark:text-dark-text mb-6 w-full">
+            Слушайте популярное
+          </h1>
+          <div class="flex space-x-4 mb-4">
+            <button
+              @click="popularTab = 'listens'"
+              class="px-4 py-2 text-light-text dark:text-dark-text"
+              :class="{ 'border-b border-light-primary dark:border-dark-primary': popularTab === 'listens' }"
+            >
+              По прослушиваниям
+            </button>
+            <button
+              @click="popularTab = 'likes'"
+              class="px-4 py-2 text-light-text dark:text-dark-text"
+              :class="{ 'border-b border-light-primary dark:border-dark-primary': popularTab === 'likes' }"
+            >
+              По лайкам
+            </button>
+          </div>
+          <div
+            class="flex w-full overflow-x-auto space-x-4 pb-4 scrollbar-thin scrollbar-thumb-light-primary scrollbar-thumb-dark-primary"
+          >
+            <div v-for="t in popularTracks" :key="t.trackId" class="flex-none w-64">
+              <TrackCardLibrary
+                :track="t"
+                :section="popularTab === 'listens' ? 'topPlays' : 'topLikes'"
+                @add-to-library="addToLibrary"
+                @remove-from-library="removeFromLibrary"
+                @add-to-queue="addToQueue"
+                @play-track="playTrack"
+                @toggle-play="togglePlay"
+                @add-next="addToNext"
+              />
+            </div>
+          </div>
+        </div>
 
-      <!-- Новые треки -->
-      <div class="mt-8">
-        <h3 class="text-lg mb-4">Новые треки</h3>
-        <div class="flex flex-col space-y-2">
-          <TrackRow
-            v-for="t in trackStore.newTracks"
-            :key="t.trackId"
-            :track="t"
-            section="newTracks"
-            @add-to-library="addToLibrary"
-            @remove-from-library="removeFromLibrary"
-            @add-to-queue="addToQueue"
-            @play-track="playTrack"
-            @toggle-play="togglePlay"
-            @add-next="addToNext"
-          />
+        <!-- Новые треки -->
+        <div class="mt-8">
+          <h3 class="text-lg mb-4">Новые треки</h3>
+          <div class="flex flex-col space-y-2">
+            <TrackRow
+              v-for="t in trackStore.newTracks"
+              :key="t.trackId"
+              :track="t"
+              section="newTracks"
+              @add-to-library="addToLibrary"
+              @remove-from-library="removeFromLibrary"
+              @add-to-queue="addToQueue"
+              @play-track="playTrack"
+              @toggle-play="togglePlay"
+              @add-next="addToNext"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -120,23 +122,34 @@
   const authStore = useAuthStore();
   const toast = useToast();
 
-  // Поисковый запрос
+  // Поисковый запрос и состояние поиска
   const searchQuery = ref('');
+  const isSearching = ref(false);
+
   const handleSearch = debounce(async (query) => {
     if (query && query.trim()) {
       try {
-        // Reset pagination for new search
+        isSearching.value = true;
         await trackStore.searchTracks(query, 0, trackStore.searchSize, 'relevance');
       } catch (err) {
         console.error('Ошибка поиска:', err);
         toast.error('Ошибка при поиске треков');
       }
     } else {
+      isSearching.value = false;
       trackStore.searchResults = [];
       trackStore.searchTotal = 0;
       trackStore.searchFrom = 0;
     }
   }, 300);
+
+  const clearSearch = () => {
+    searchQuery.value = '';
+    isSearching.value = false;
+    trackStore.searchResults = [];
+    trackStore.searchTotal = 0;
+    trackStore.searchFrom = 0;
+  };
 
   // Загрузка дополнительных результатов
   const loadMore = async () => {
@@ -163,7 +176,6 @@
         trackStore.fetchTopLikes(10),
         trackStore.fetchNewTracks(10),
       ];
-      // Fetch user library only if user is logged in
       if (authStore.userId) {
         fetches.push(trackStore.fetchUserLibrary());
       }
