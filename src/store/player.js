@@ -1,3 +1,4 @@
+
 import { defineStore } from 'pinia';
 import { ref, computed, nextTick } from 'vue';
 import { useTrackStore } from '@/store/track';
@@ -6,8 +7,10 @@ import { throttle } from 'lodash';
 
 export const usePlayerStore = defineStore('player', () => {
     const trackStore = useTrackStore();
-    const baseQueue = ref([]); // Queue from a section
-    const customQueue = ref([]); // Tracks added on-the-fly
+    const baseQueue = ref([]);
+    const customQueue = ref([]);
+    const recentTracks = ref([]);
+    const futureTracks = ref([]);
     const currentTrackId = ref(null);
     const isPlaying = ref(false);
     const loopMode = ref('none');
@@ -19,6 +22,7 @@ export const usePlayerStore = defineStore('player', () => {
     const volume = ref(0.5);
     const isMuted = ref(false);
     const bufferedProgress = ref(0);
+    const isDarkMode = ref(false);
 
     // Cache tracks to avoid repeated searches
     const trackMap = computed(() => {
@@ -41,7 +45,6 @@ export const usePlayerStore = defineStore('player', () => {
             : null;
     });
 
-    // Combine customQueue and baseQueue, ensuring no duplicates
     const queueTracks = computed({
         get: () => {
             const seen = new Set();
@@ -65,14 +68,11 @@ export const usePlayerStore = defineStore('player', () => {
             return result;
         },
         set: (newQueue) => {
-            // Split newQueue into customQueue and baseQueue
             const customIds = customQueue.value.filter((id) => newQueue.includes(id));
             const baseIds = baseQueue.value.filter((id) => newQueue.includes(id));
             const newIds = newQueue.filter(
                 (id) => !customIds.includes(id) && !baseIds.includes(id)
             );
-
-            // Preserve order from newQueue
             customQueue.value = newQueue.filter((id) => customIds.includes(id));
             baseQueue.value = newQueue.filter((id) => baseIds.includes(id) || newIds.includes(id));
         },
@@ -82,9 +82,30 @@ export const usePlayerStore = defineStore('player', () => {
         queueTracks.value.findIndex((id) => id === currentTrackId.value)
     );
 
+    function getPrevTrack() {
+        if (recentTracks.value.length > 0) {
+            const prevEntry = recentTracks.value[recentTracks.value.length - 1];
+            return prevEntry ? { ...prevEntry.metadata, streamUrl: trackService.getStreamUrl(prevEntry.trackId) || '' } : null;
+        }
+        return null;
+    }
+
+    function getNextTrack() {
+        if (futureTracks.value.length > 0) {
+            const nextEntry = futureTracks.value[futureTracks.value.length - 1];
+            return nextEntry ? { ...nextEntry.metadata, streamUrl: trackService.getStreamUrl(nextEntry.trackId) || '' } : null;
+        }
+        const idx = currentIndex.value;
+        if (idx >= 0 && idx < queueTracks.value.length - 1) {
+            const nextId = queueTracks.value[idx + 1];
+            return trackMap.value.get(nextId) ? { ...trackMap.value.get(nextId), streamUrl: trackService.getStreamUrl(nextId) || '' } : null;
+        }
+        return null;
+    }
+
     function setAudioElement(el) {
+        // Очищаем старые обработчики, если audioElement существует
         if (audioElement.value) {
-            // Очистка предыдущих обработчиков
             audioElement.value.onloadedmetadata = null;
             audioElement.value.ontimeupdate = null;
             audioElement.value.onprogress = null;
@@ -94,18 +115,20 @@ export const usePlayerStore = defineStore('player', () => {
         }
 
         audioElement.value = el;
-        if (!el) return;
+        if (!el) return; // Проверка на null/undefined
 
-        // Инициализация audio
         el.volume = isMuted.value ? 0 : volume.value;
         el.loop = loopMode.value === 'one';
 
+        // Проверяем, что элемент существует перед установкой обработчиков
         el.onloadedmetadata = () => {
+            if (!audioElement.value) return;
             duration.value = el.duration || 0;
             currentTime.value = 0;
         };
 
         el.ontimeupdate = throttle(() => {
+            if (!audioElement.value) return; // Защита от null
             currentTime.value = el.currentTime;
             if (el.buffered.length > 0 && duration.value > 0) {
                 const bufferedEnd = el.buffered.end(el.buffered.length - 1);
@@ -114,6 +137,7 @@ export const usePlayerStore = defineStore('player', () => {
         }, 200);
 
         el.onprogress = throttle(() => {
+            if (!audioElement.value) return; // Защита от null
             if (el.buffered.length > 0 && duration.value > 0) {
                 const bufferedEnd = el.buffered.end(el.buffered.length - 1);
                 bufferedProgress.value = (bufferedEnd / duration.value) * 100;
@@ -121,13 +145,21 @@ export const usePlayerStore = defineStore('player', () => {
         }, 200);
 
         el.onended = () => {
+            if (!audioElement.value) return;
             if (loopMode.value !== 'one') {
                 nextTrack();
             }
         };
 
-        el.onplay = () => (isPlaying.value = true);
-        el.onpause = () => (isPlaying.value = false);
+        el.onplay = () => {
+            if (!audioElement.value) return;
+            isPlaying.value = true;
+        };
+
+        el.onpause = () => {
+            if (!audioElement.value) return;
+            isPlaying.value = false;
+        };
     }
 
     async function loadBaseQueueFrom(section, limit = 10) {
@@ -160,16 +192,6 @@ export const usePlayerStore = defineStore('player', () => {
             return;
         }
 
-        if (!trackMap.value.has(trackId)) {
-            try {
-                const md = await trackService.getTrackMetadata(trackId);
-                trackStore.searchResults.push(md);
-            } catch (error) {
-                console.error(`Failed to fetch metadata for track ${trackId}:`, error);
-                return;
-            }
-        }
-
         currentTrackId.value = trackId;
         await nextTick();
         if (audioElement.value) {
@@ -200,6 +222,17 @@ export const usePlayerStore = defineStore('player', () => {
             await loadBaseQueueFrom(section);
         }
 
+        // Проверяем, есть ли трек в trackMap, и загружаем метаданные, если его нет
+        if (!trackMap.value.has(trackId)) {
+            try {
+                const md = await trackService.getTrackMetadata(trackId);
+                trackStore.searchResults.push(md);
+            } catch (error) {
+                console.error(`Failed to fetch metadata for track ${trackId}:`, error);
+                return;
+            }
+        }
+
         await setCurrent(trackId);
         play();
     }
@@ -228,40 +261,65 @@ export const usePlayerStore = defineStore('player', () => {
 
     function nextTrack() {
         const idx = currentIndex.value;
-        if (idx < 0) return;
+        let newId = null;
 
-        let newId;
-        if (shuffleActive.value) {
-            newId = queueTracks.value[Math.floor(Math.random() * queueTracks.value.length)];
-        } else if (idx === queueTracks.value.length - 1) {
-            if (loopMode.value === 'all') {
+        if (futureTracks.value.length > 0) {
+            const nextEntry = futureTracks.value.pop();
+            newId = nextEntry.trackId;
+        } else if (idx >= 0) {
+            if (shuffleActive.value) {
+                newId = queueTracks.value[Math.floor(Math.random() * queueTracks.value.length)];
+            } else if (idx < queueTracks.value.length - 1) {
+                newId = queueTracks.value[idx + 1];
+            } else if (loopMode.value === 'all') {
                 newId = queueTracks.value[0];
             } else {
                 return pause();
             }
-        } else {
-            newId = queueTracks.value[idx + 1];
         }
 
-        if (customQueue.value.length > 0) {
-            customQueue.value = customQueue.value.filter((id) => id !== currentTrackId.value);
-            if (loopMode.value === 'all') {
-                customQueue.value.push(currentTrackId.value);
+        if (newId) {
+            if (currentTrackId.value && currentTrack.value) {
+                recentTracks.value.push({
+                    trackId: currentTrackId.value,
+                    metadata: { ...currentTrack.value, streamUrl: undefined }
+                });
+                if (recentTracks.value.length > 5) {
+                    recentTracks.value.shift();
+                }
             }
-        } else {
-            baseQueue.value = baseQueue.value.filter((id) => id !== currentTrackId.value);
-            if (loopMode.value === 'all') {
-                baseQueue.value.push(currentTrackId.value);
-            }
-        }
 
-        if (newId) playTrack(newId);
+            if (customQueue.value.length > 0) {
+                customQueue.value = customQueue.value.filter((id) => id !== currentTrackId.value);
+                if (loopMode.value === 'all') {
+                    customQueue.value.push(currentTrackId.value);
+                }
+            } else {
+                baseQueue.value = baseQueue.value.filter((id) => id !== currentTrackId.value);
+                if (loopMode.value === 'all') {
+                    baseQueue.value.push(currentTrackId.value);
+                }
+            }
+
+            playTrack(newId);
+        }
     }
 
     function prevTrack() {
-        const idx = currentIndex.value;
-        if (idx > 0) {
-            playTrack(queueTracks.value[idx - 1]);
+        if (recentTracks.value.length > 0) {
+            const prevEntry = recentTracks.value.pop();
+            if (prevEntry && prevEntry.trackId) {
+                if (currentTrackId.value && currentTrack.value) {
+                    futureTracks.value.push({
+                        trackId: currentTrackId.value,
+                        metadata: { ...currentTrack.value, streamUrl: undefined }
+                    });
+                    if (futureTracks.value.length > 5) {
+                        futureTracks.value.shift();
+                    }
+                }
+                playTrack(prevEntry.trackId);
+            }
         } else if (audioElement.value) {
             audioElement.value.currentTime = 0;
         }
@@ -297,6 +355,8 @@ export const usePlayerStore = defineStore('player', () => {
     function clearQueue() {
         customQueue.value = [];
         baseQueue.value = [];
+        recentTracks.value = [];
+        futureTracks.value = [];
         currentTrackId.value = null;
         isPlaying.value = false;
         if (audioElement.value) audioElement.value.src = '';
@@ -356,8 +416,12 @@ export const usePlayerStore = defineStore('player', () => {
 
     return {
         currentTrack,
+        getPrevTrack,
+        getNextTrack,
         baseQueue,
         customQueue,
+        recentTracks,
+        futureTracks,
         currentTrackId,
         isPlaying,
         loopMode,
@@ -370,6 +434,7 @@ export const usePlayerStore = defineStore('player', () => {
         volume,
         isMuted,
         bufferedProgress,
+        isDarkMode,
         setAudioElement,
         loadBaseQueueFrom,
         moveInBaseQueue,
@@ -378,8 +443,8 @@ export const usePlayerStore = defineStore('player', () => {
         play,
         pause,
         togglePlay,
-        nextTrack,
         prevTrack,
+        nextTrack,
         toggleLoopMode,
         toggleShuffle,
         enqueue,

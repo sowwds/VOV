@@ -9,9 +9,7 @@ import BlankLayout from '@/components/Layout/BlankLayout.vue';
 import Home from '@/views/Home.vue';
 import Restoration from '@/views/Restoration.vue';
 import Collection from '@/views/Collection.vue';
-import ProfileSettings from '@/views/ProfileSettings.vue';
 import Library from '@/views/Library.vue';
-import WW2Map from '@/views/WW2Map.vue';
 import Login from '@/views/Login.vue';
 import Callback from '@/views/Callback.vue';
 
@@ -29,9 +27,7 @@ const routes = [
       { path: '', name: 'Главная', component: Home },
       { path: 'restoration', name: 'Реставрация', component: Restoration },
       { path: 'collection', name: 'Коллекция', component: Collection, meta: {keepAlive: true}},
-      { path: 'profile-settings', name: 'Настройки профиля', component: ProfileSettings },
       { path: 'library', name: 'Library', component: Library, meta: {keepAlive: true} },
-      { path: 'map', name: 'WW2Map', component: WW2Map },
     ],
   },
 

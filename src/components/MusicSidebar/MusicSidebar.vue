@@ -1,6 +1,6 @@
 <template>
   <div
-      class="fixed right-0 bottom-0 bg-light-surface dark:bg-dark-surface shadow-xl w-96 flex flex-col p-4 overflow-hidden border-l border-gray-200 dark:border-dark-border"
+      class="fixed right-0 bottom-0 bg-light-surface dark:bg-dark-surface shadow-xl w-96 flex flex-col p-4 overflow-hidden border-l border-gray-200 dark:border-dark-border z-50"
       :style="{ height: `calc(100vh - ${headerHeight}px)` }"
   >
     <!-- 1) Обложка + инфо + лайк -->
@@ -234,9 +234,9 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { usePlayerStore } from '@/store/player';
-import { useTrackStore } from '@/store/track';
-import { useMusicStore } from '@/store/music';
+import { usePlayerStore } from '@/store/player.js';
+import { useTrackStore } from '@/store/track.js';
+import { useMusicStore } from '@/store/music.js';
 import { useToast } from 'vue-toastification';
 import {
   HeartIcon,
@@ -251,7 +251,7 @@ import {
   ArrowPathRoundedSquareIcon,
   InformationCircleIcon,
 } from '@heroicons/vue/24/outline';
-import QueueSidebar from '@/components/Music/QueueSidebar.vue';
+import QueueSidebar from '@/components/MusicSidebar/QueueSidebar.vue';
 
 const playerStore = usePlayerStore();
 const trackStore = useTrackStore();
@@ -471,6 +471,9 @@ input[type="range"]::-moz-range-progress {
   scrollbar-width: thin;
   scrollbar-color: #c1c1c1 #f1f1f1;
 }
+.mt-4.flex-1 {
+  overflow: hidden; /* Prevent queue from overflowing the sidebar */
+}
 .mt-4.flex-1::-webkit-scrollbar {
   width: 6px;
 }
@@ -489,7 +492,7 @@ input[type="range"]::-moz-range-progress {
   background: #2d3748;
 }
 .dark .mt-4.flex-1::-webkit-scrollbar-thumb {
-  background: #4a5568;
+  background: #3a3d46;
 }
 .relative.w-40.h-40.rounded-full {
   border: 2px solid #4b5563; /* Тонкая обводка для светлой темы */

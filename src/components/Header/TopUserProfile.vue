@@ -2,6 +2,7 @@
   <div class="relative h-10 w-64">
     <!-- Единый блок - плашка с динамической высотой -->
     <div
+        ref="dropdown"
         class="absolute top-0 right-0 left-0 bg-light-surface/90 dark:bg-dark-surface/90 backdrop-blur-sm shadow-lg cursor-pointer border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden transition-all duration-1000 ease-in-out z-10 box-border"
         :style="{ maxHeight: isExpanded ? '340px' : '40px', transitionProperty: 'max-height' }"
         @mouseenter="onMouseEnter"
@@ -83,36 +84,35 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { logout } from '@/services/authservice.js'
-import { useAuthStore } from '@/store/auth.js'
-import { storeToRefs } from 'pinia'
-import ThemeSwitcher from "@/components/Header/ThemeSwitcher.vue";
+import { ref, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { logout } from '@/services/authservice.js';
+import { useAuthStore } from '@/store/auth.js';
+import { storeToRefs } from 'pinia';
+import ThemeSwitcher from '@/components/Header/ThemeSwitcher.vue';
 
-const router = useRouter()
-const authStore = useAuthStore()
-const { avatarUrl, fullName, email } = storeToRefs(authStore)
-const isExpanded = ref(false)
-let isAnimating = ref(false)
+const router = useRouter();
+const authStore = useAuthStore();
+const { avatarUrl, fullName, email } = storeToRefs(authStore);
+const isExpanded = ref(false);
+const dropdown = ref(null);
 
 // Функция для переключения меню на мобильных устройствах
 function toggleExpanded() {
-  // Проверяем, на мобильном ли устройстве
   if (window.innerWidth < 768) {
-    isExpanded.value = !isExpanded.value
+    isExpanded.value = !isExpanded.value;
   }
 }
 
 function onMouseEnter() {
   if (window.innerWidth >= 768) {
-    isExpanded.value = true
+    isExpanded.value = true;
   }
 }
 
 function onMouseLeave() {
   if (window.innerWidth >= 768) {
-    isExpanded.value = false
+    isExpanded.value = false;
   }
 }
 
@@ -120,16 +120,30 @@ function handleLogout() {
   logout();
   router.push('/login');
 }
+
+// Закрытие меню при клике вне плашки на мобильных
+function handleClickOutside(event) {
+  if (window.innerWidth < 768 && isExpanded.value && dropdown.value && !dropdown.value.contains(event.target)) {
+    isExpanded.value = false;
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
+});
 </script>
 
 <style scoped>
-
 .transition-all {
   transition-property: all;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 300ms;
 }
-/* Учет границ в размере */
+
 .box-border {
   box-sizing: border-box;
 }
