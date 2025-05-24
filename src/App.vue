@@ -4,7 +4,11 @@
 </template>
 
 <script setup>
+import { defineAsyncComponent } from 'vue';
 
+const TrackCardLibrary = defineAsyncComponent(() =>
+    import('./components/TrackLayout/TrackCardLibrary.vue')
+);
 </script>
 
 <style>

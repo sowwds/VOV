@@ -57,16 +57,18 @@ function handleCardMouseLeave (e) {
   closeMenu()
 }
 function handleClickOutside (e) {
+  // закрытие меню
   if (
       showMenu.value &&
       !menuRef.value?.contains(e.target) &&
       !triggerRef.value?.contains(e.target)
   ) closeMenu()
 
+  // закрытие оверлея (только мобилка)
   if (
       isMobile.value && showOverlay.value &&
-      !e.target.closest('.group') &&
-      !menuRef.value?.contains(e.target)
+      !e.target.closest('.group')?.contains(triggerRef.value) && // клик вне текущей карточки
+      !menuRef.value?.contains(e.target)    // и не меню
   ) hideOverlay()
 }
 

@@ -41,7 +41,10 @@ const menuRef     = ref(null)
 
 /* ────────── overlay helpers (mobile) ────────── */
 function handleCardClick () {
-  if (isMobile.value) showOverlay.value = true
+  if (isMobile.value) {
+    showOverlay.value = false; // Сбрасываем оверлей перед показом нового
+    showOverlay.value = true;
+  }
 }
 function hideOverlay () { showOverlay.value = false }
 
@@ -75,7 +78,7 @@ function handleClickOutside (e) {
   // закрытие оверлея (только мобилка)
   if (
       isMobile.value && showOverlay.value &&
-      !e.target.closest('.group')       &&  // вне карточки
+      !e.target.closest('.group')?.contains(triggerRef.value) && // клик вне текущей карточки
       !menuRef.value?.contains(e.target)    // и не меню
   ) hideOverlay()
 }
