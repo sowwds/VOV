@@ -1,7 +1,8 @@
 <template>
-  <div class="flex h-screen overflow-hidden flex-col">
-    <AudioVisualizer />
-    <Header @toggleDrawer="toggleDrawer" :drawerOpen="drawerOpen" />
+    <div class="flex min-h-screen h-full overflow-hidden flex-col">
+      <!-- AudioVisualizer показываем только если hideMusic не true -->
+      <AudioVisualizer v-if="!route.meta.hideMusic" />
+      <Header @toggleDrawer="toggleDrawer" :drawerOpen="drawerOpen" />
 
     <!-- Main content area -->
     <div class="flex-1 flex flex-col h-full overflow-auto relative mt-3">

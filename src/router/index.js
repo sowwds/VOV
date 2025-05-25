@@ -20,11 +20,19 @@ const routes = [
     component: MainLayout,
     beforeEnter: (to, from, next) => {
       const authStore = useAuthStore();
-      if (!authStore.token) return next('/login');
-      next();
+      // Если это Home ('/'), пропускаем без проверки токена
+      if (to.path === '/') {
+        next();
+      }
+      // Для остальных маршрутов проверяем токен
+      else if (!authStore.token) {
+        next('/login');
+      } else {
+        next();
+      }
     },
     children: [
-      { path: '', name: 'Главная', component: Home },
+      { path: '', name: 'Главная', component: Home, meta: { hideMusic: true } },
       { path: 'restoration', name: 'Реставрация', component: Restoration },
       { path: 'collection', name: 'Коллекция', component: Collection, meta: {keepAlive: true}},
       { path: 'library', name: 'Library', component: Library, meta: {keepAlive: true} },
