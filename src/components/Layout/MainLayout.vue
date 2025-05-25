@@ -1,206 +1,210 @@
 <template>
-  <div class="flex h-screen overflow-hidden flex-col">
-    <AudioVisualizer />
-    <Header @toggleDrawer="toggleDrawer" :drawerOpen="drawerOpen" />
+    <div class="flex min-h-screen h-full overflow-hidden flex-col">
+      <!-- AudioVisualizer показываем только если hideMusic не true -->
+      <AudioVisualizer v-if="!route.meta.hideMusic" />
+      <Header @toggleDrawer="toggleDrawer" :drawerOpen="drawerOpen" />
 
-    <!-- Mobile overlay -->
-    <transition name="fade">
-      <div
+      <!-- Mobile overlay -->
+      <transition name="fade">
+        <div
           v-if="drawerOpen"
           class="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
           @click="toggleDrawer"
-      />
-    </transition>
+        />
+      </transition>
 
-    <!-- Main content area -->
-    <div class="flex-1 flex flex-col h-full overflow-auto relative">
-      <!-- Glowing indigo half-circle trigger -->
-      <div
+      <!-- Main content area -->
+      <div class="flex-1 flex flex-col h-full overflow-auto relative">
+        <!-- Glowing indigo half-circle trigger -->
+        <div
           class="hidden md:block fixed left-0 top-1/2 -translate-y-1/2 z-10 h-40 w-10 overflow-visible"
           @mouseenter="drawerOpen = true"
-      >
-        <div class="relative h-full w-full">
-          <!-- Glowing effect -->
-          <div
+        >
+          <div class="relative h-full w-full">
+            <!-- Glowing effect -->
+            <div
               class="absolute left-0 top-1/2 -translate-y-1/2 h-24 w-10 rounded-r-full transition-all duration-500"
               :class="{
-              'w-12': drawerOpen,
-              'opacity-100': drawerOpen,
-              'opacity-70': !drawerOpen
-            }"
-          >
-            <div class="relative h-full w-full">
-              <!-- Gradient circle -->
-              <div class="absolute inset-0 rounded-r-full bg-gradient-to-r from-indigo-500 to-indigo-300 opacity-80"></div>
-              <!-- Glow effect with animation -->
-              <div
+                'w-12': drawerOpen,
+                'opacity-100': drawerOpen,
+                'opacity-70': !drawerOpen
+              }"
+            >
+              <div class="relative h-full w-full">
+                <!-- Gradient circle -->
+                <div class="absolute inset-0 rounded-r-full bg-gradient-to-r from-indigo-500 to-indigo-300 opacity-80"></div>
+                <!-- Glow effect with animation -->
+                <div
                   class="absolute inset-0 rounded-r-full bg-indigo-400 opacity-20 blur-sm transition-all duration-300"
                   :class="{
-                  'opacity-30': drawerOpen,
-                  'w-full': drawerOpen,
-                  'w-8': !drawerOpen
-                }"
-              ></div>
-            </div>
+                    'opacity-30': drawerOpen,
+                    'w-full': drawerOpen,
+                    'w-8': !drawerOpen
+                  }"
+                ></div>
+              </div>
 
-            <!-- Burger icon -->
-            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-              <svg
+              <!-- Burger icon -->
+              <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                <svg
                   class="w-5 h-5 text-white transition-transform duration-500"
                   :class="{ 'rotate-90': drawerOpen }"
                   fill="none"
                   stroke="currentColor"
                   stroke-width="2"
                   viewBox="0 0 24 24"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Sidebar -->
-      <transition name="slide">
-        <aside
+        <!-- Sidebar -->
+        <transition name="slide">
+          <aside
             v-if="drawerOpen"
             class="fixed inset-y-0 left-0 bg-white dark:bg-gray-900 w-64 z-20 shadow-xl"
             @mouseleave="closeSidebar"
-        >
-          <Sidebar />
-        </aside>
-      </transition>
+          >
+            <Sidebar />
+          </aside>
+        </transition>
 
-      <!-- Page content with larger padding -->
-      <main
+        <!-- Page content with larger padding -->
+        <main
           class="pt-16 flex-1 overflow-auto px-8 md:px-12 lg:px-16 pb-6 transition-all duration-500"
           :class="{ 'md:pl-16': drawerOpen }"
           @click="closeSidebarOnMobile"
-      >
-        <router-view />
-      </main>
+        >
+          <router-view />
+        </main>
 
-      <!-- Music player -->
-      <footer v-if="!musicStore.isSidebarVisible" class="flex-shrink-0">
-        <MusicBar />
-      </footer>
+        <!-- MusicBar показываем, если hideMusic не true и MusicSidebar не видима -->
+        <footer v-if="!route.meta.hideMusic && !musicStore.isSidebarVisible" class="flex-shrink-0">
+          <MusicBar />
+        </footer>
 
-      <!-- Если сайдбар открыт, телепортим его в <body> -->
-      <Teleport to="body">
-        <MusicSidebar v-if="musicStore.isSidebarVisible" />
-      </Teleport>
-    </div>
+        <!-- Если сайдбар открыт, телепортим его в <body> -->
+        <Teleport to="body">
+          <MusicSidebar v-if="musicStore.isSidebarVisible" />
+        </Teleport>
+      </div>
 
-    <!-- Общий audio элемент -->
-    <audio
+      <!-- Общий audio элемент -->
+      <audio
         ref="audio"
         crossorigin="anonymous"
         preload="metadata"
         class="hidden"
-    ></audio>
-  </div>
-</template>
+      ></audio>
+    </div>
+  </template>
 
-<script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
-import Sidebar from '@/components/Sidebar/Sidebar.vue';
-import MusicBar from '@/components/Music/MusicBar.vue';
-import MusicSidebar from '@/components/Music/MusicSidebar.vue';
-import Header from '@/components/Header/Header.vue';
-import AudioVisualizer from '@/components/AudioVisualizer/AudioVisualizer.vue';
-import { useMusicStore } from '@/store/music';
-import { usePlayerStore } from '@/store/player';
+  <script setup>
+  import { ref, onMounted, onUnmounted } from 'vue';
+  import { useRoute } from 'vue-router'; // Добавляем импорт useRoute
+  import Sidebar from '@/components/Sidebar/Sidebar.vue';
+  import MusicBar from '@/components/Music/MusicBar.vue';
+  import MusicSidebar from '@/components/Music/MusicSidebar.vue';
+  import Header from '@/components/Header/Header.vue';
+  import AudioVisualizer from '@/components/AudioVisualizer/AudioVisualizer.vue';
+  import { useMusicStore } from '@/store/music';
+  import { usePlayerStore } from '@/store/player';
 
-const musicStore = useMusicStore();
-const playerStore = usePlayerStore();
-const drawerOpen = ref(false);
-const audio = ref(null);
+  const route = useRoute(); // Получаем текущий маршрут
 
-function toggleDrawer() {
-  drawerOpen.value = !drawerOpen.value;
-}
+  const musicStore = useMusicStore();
+  const playerStore = usePlayerStore();
+  const drawerOpen = ref(false);
+  const audio = ref(null);
 
-function closeSidebar() {
-  if (window.innerWidth >= 768) {
-    drawerOpen.value = false;
+  function toggleDrawer() {
+    drawerOpen.value = !drawerOpen.value;
   }
-}
 
-function closeSidebarOnMobile() {
-  if (window.innerWidth < 768 && drawerOpen.value) {
-    drawerOpen.value = false;
+  function closeSidebar() {
+    if (window.innerWidth >= 768) {
+      drawerOpen.value = false;
+    }
   }
-}
 
-// Инициализация audio в playerStore
-onMounted(() => {
-  if (audio.value) {
-    playerStore.setAudioElement(audio.value);
+  function closeSidebarOnMobile() {
+    if (window.innerWidth < 768 && drawerOpen.value) {
+      drawerOpen.value = false;
+    }
   }
-});
 
-// Очистка при размонтировании
-onUnmounted(() => {
-  playerStore.setAudioElement(null);
-});
-</script>
+  // Инициализация audio в playerStore
+  onMounted(() => {
+    if (audio.value) {
+      playerStore.setAudioElement(audio.value);
+    }
+  });
 
-<style scoped>
-/* Ripple animation */
-@keyframes ripple {
-  0% {
-    transform: scale(0);
-    opacity: 1;
+  // Очистка при размонтировании
+  onUnmounted(() => {
+    playerStore.setAudioElement(null);
+  });
+  </script>
+
+  <style scoped>
+  /* Ripple animation */
+  @keyframes ripple {
+    0% {
+      transform: scale(0);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(3);
+      opacity: 0;
+    }
   }
-  100% {
-    transform: scale(3);
+
+  .animate-ripple {
+    animation: ripple 1s ease-out infinite;
+  }
+
+  /* Glow animation */
+  @keyframes glow-pulse {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 0.9; }
+  }
+
+  .glow-effect {
+    animation: glow-pulse 2s infinite;
+  }
+
+  /* Slide animation */
+  .slide-enter-active,
+  .slide-leave-active {
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .slide-enter-from,
+  .slide-leave-to {
+    transform: translateX(-100%);
+  }
+
+  /* Fade animation */
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: opacity 0.4s ease;
+  }
+
+  .fade-enter-from,
+  .fade-leave-to {
     opacity: 0;
   }
-}
 
-.animate-ripple {
-  animation: ripple 1s ease-out infinite;
-}
+  /* Smooth content movement */
+  main {
+    transition: padding 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
 
-/* Glow animation */
-@keyframes glow-pulse {
-  0%, 100% { opacity: 0.7; }
-  50% { opacity: 0.9; }
-}
-
-.glow-effect {
-  animation: glow-pulse 2s infinite;
-}
-
-/* Slide animation */
-.slide-enter-active,
-.slide-leave-active {
-  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.slide-enter-from,
-.slide-leave-to {
-  transform: translateX(-100%);
-}
-
-/* Fade animation */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.4s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-/* Smooth content movement */
-main {
-  transition: padding 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* Prevent scrolling when sidebar is open */
-body:has(.fixed.inset-0.bg-black.bg-opacity-50) {
-  overflow: hidden;
-}
-</style>
+  /* Prevent scrolling when sidebar is open */
+  body:has(.fixed.inset-0.bg-black.bg-opacity-50) {
+    overflow: hidden;
+  }
+  </style>
