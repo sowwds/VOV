@@ -15,6 +15,6 @@ const TrackCardLibrary = defineAsyncComponent(() =>
 html, body, #app {
   height: 100%;
   margin: 0;
-  font-family: Satoshi, Sans serif;
+  font-family: Satoshi, sans-serif;
 }
 </style>

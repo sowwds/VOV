@@ -1,11 +1,11 @@
 <template>
-    <div class="flex min-h-screen h-full overflow-hidden flex-col">
-      <!-- AudioVisualizer показываем только если hideMusic не true -->
-      <AudioVisualizer v-if="!route.meta.hideMusic" />
-      <Header @toggleDrawer="toggleDrawer" :drawerOpen="drawerOpen" />
+  <div class="flex min-h-screen h-full overflow-auto flex-col custom-scroll">
+    <!-- AudioVisualizer показываем только если hideMusic не true -->
+    <AudioVisualizer v-if="!route.meta.hideMusic" />
+    <Header @toggleDrawer="toggleDrawer" :drawerOpen="drawerOpen" />
 
     <!-- Main content area -->
-    <div class="flex-1 flex flex-col h-full overflow-auto relative mt-3">
+    <div class="flex-1 flex flex-col relative mt-3">
       <!-- Mobile overlay -->
       <transition name="fade">
         <div
@@ -29,22 +29,30 @@
 
       <!-- Page content -->
       <main
-          class="flex-1 overflow-auto px-8 md:px-12 lg:px-16 pb-6 pt-15"
+          class="flex-1 px-8 md:px-12 lg:px-16 pb-6 pt-15"
           @click="closeSidebarOnMobile"
       >
         <router-view />
       </main>
 
       <!-- Music player -->
-      <footer v-if="!isMobile && !musicStore.isSidebarVisible" class="flex-shrink-0">
-        <MusicBar :audioElement="audio" />
+      <footer
+          v-if="!route.meta.hideMusic && !musicStore.isSidebarVisible && !isMobile"
+          class="fixed inset-x-0 bottom-0 flex-shrink-0 h-16 z-50 mb-4"
+      >
+        <MusicBar />
       </footer>
-      <footer v-if="isMobile" class="flex-shrink-0">
+
+      <!-- Мобильная версия -->
+      <footer
+          v-if="isMobile && !route.meta.hideMusic"
+          class="fixed inset-x-0 bottom-0 flex-shrink-0 h-16 z-50"
+      >
         <MobileMusicBar :audioElement="audio" />
       </footer>
 
       <Teleport to="body">
-        <MusicSidebar v-if="!isMobile && musicStore.isSidebarVisible" />
+        <MusicSidebar v-if="!isMobile && musicStore.isSidebarVisible && !route.meta.hideMusic" />
       </Teleport>
     </div>
 
@@ -67,7 +75,9 @@ import Header from '@/components/Header/Header.vue';
 import AudioVisualizer from '@/components/AudioVisualizer/AudioVisualizer.vue';
 import { useMusicStore } from '@/store/music';
 import { usePlayerStore } from '@/store/player';
+import { useRoute } from 'vue-router';
 
+const route = useRoute();
 const musicStore = useMusicStore();
 const playerStore = usePlayerStore();
 const drawerOpen = ref(false);
@@ -142,35 +152,35 @@ onUnmounted(() => {
 }
 
 /* Стили для скроллбара */
-main::-webkit-scrollbar {
+.custom-scroll::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
-main::-webkit-scrollbar-track {
+.custom-scroll::-webkit-scrollbar-track {
   background: var(--color-light-bg, #fafafc);
   border-radius: 3px;
 }
 
-main::-webkit-scrollbar-thumb {
+.custom-scroll::-webkit-scrollbar-thumb {
   background: var(--color-light-surface, #ffffff);
   border-radius: 3px;
 }
 
-main::-webkit-scrollbar-thumb:hover {
+.custom-scroll::-webkit-scrollbar-thumb:hover {
   background: var(--color-light-surface, #ffffff);
   opacity: 0.8;
 }
 
-.dark main::-webkit-scrollbar-track {
+.dark .custom-scroll::-webkit-scrollbar-track {
   background: var(--color-dark-bg, #17181c);
 }
 
-.dark main::-webkit-scrollbar-thumb {
+.dark .custom-scroll::-webkit-scrollbar-thumb {
   background: var(--color-dark-surface, #26272c);
 }
 
-.dark main::-webkit-scrollbar-thumb:hover {
+.dark .custom-scroll::-webkit-scrollbar-thumb:hover {
   background: var(--color-dark-surface, #26272c);
   opacity: 0.8;
 }
