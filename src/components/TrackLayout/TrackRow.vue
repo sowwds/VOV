@@ -4,14 +4,25 @@
         class="flex items-center p-2 bg-light-surface dark:bg-dark-surface rounded hover:bg-light-primary/10 dark:hover:bg-dark-primary/10 cursor-pointer"
     >
       <!-- Обложка -->
-      <div class="relative w-16 h-16 mr-4">
+      <div
+            class="relative w-16 h-16 mr-4 group"
+            ref="avatarRef"
+            @click="handleAvatarClick"
+            @touchstart="handleAvatarClick"
+        >
         <img
             :src="track.coverUrl || defaultCover"
             :alt="track.title"
             class="w-full h-full object-cover rounded"
         />
         <div
-            class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black bg-opacity-50 transition-opacity"
+            class="absolute inset-0 flex items-center justify-center
+           bg-black bg-opacity-50 transition-opacity"
+            :class="{
+          'opacity-0 group-hover:opacity-100' : !isMobile,
+          'opacity-100'                       :  isMobile && showOverlay,
+          'opacity-0'                         :  isMobile && !showOverlay
+        }"
         >
           <button @click.stop="onPlay" class="p-1 hover:scale-110 text-white transition-transform duration-200">
             <component :is="isPlaying ? PauseIcon : PlayIcon" class="w-8 h-8" />
@@ -46,7 +57,7 @@
   </template>
 
   <script setup>
-  import { computed } from 'vue';
+  import {computed, onMounted, onUnmounted, ref} from 'vue';
   import { usePlayerStore } from '@/store/player';
   import { useTrackStore } from '@/store/track';
   import {
@@ -112,6 +123,37 @@
       emit('add-to-library', track.trackId);
     }
   }
+
+  /* ────────── мобильный оверлей ────────── */
+      const windowWidth = ref(window.innerWidth)
+      const isMobile    = computed(() => windowWidth.value <= 768)
+
+      const showOverlay = ref(false)
+      const avatarRef   = ref(null)
+
+      function handleAvatarClick () {               // открыть
+          if (isMobile.value) showOverlay.value = true
+            }
+      function hideOverlay () { showOverlay.value = false }  // закрыть
+
+      function handleOutside (e) {                  // клик вне – закрыть
+         if (
+                  isMobile.value && showOverlay.value &&
+                  !avatarRef.value?.contains(e.target)
+              ) hideOverlay()
+          }
+
+  onMounted(() => {
+          document.addEventListener('click', handleOutside)
+          document.addEventListener('touchstart', handleOutside)
+          window.addEventListener('resize', () => { windowWidth.value = window.innerWidth })
+  })
+  onUnmounted(() => {
+    document.removeEventListener('click', handleOutside)
+    document.removeEventListener('touchstart', handleOutside)
+  })
+
+
   </script>
 
   <style scoped>

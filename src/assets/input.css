@@ -22,9 +22,11 @@
     --color-dark-text-muted: #9ca3af;  /* Светло-серый */
     --color-dark-border: #374151;  /* Темно-серый */
 
-    /* Плеер (отдельное окно) */
-    --color-player-bg: #ffffff;
-    --color-player-bg-dark: #1e1f24;
-    --color-progress: #6366f1;
-    --color-progress-dark: #8b5cf6;
+    --color-light-track: #fafafc;
+    --color-light-thumb: #b0b0b0; /* Слегка темнее белого */
+    --color-light-hover: #909090;
+
+    --color-dark-track: #17181c; /* Чуть темнее --color-dark-surface */
+    --color-dark-thumb: #3a3d46; /* Светлее --color-dark-surface (#26272c) */
+    --color-dark-hover: #4a4d58;
 }

@@ -1,210 +1,187 @@
 <template>
-    <div class="flex min-h-screen h-full overflow-hidden flex-col">
-      <!-- AudioVisualizer показываем только если hideMusic не true -->
-      <AudioVisualizer v-if="!route.meta.hideMusic" />
-      <Header @toggleDrawer="toggleDrawer" :drawerOpen="drawerOpen" />
+  <div class="flex min-h-screen h-full overflow-auto flex-col custom-scroll">
+    <!-- AudioVisualizer показываем только если hideMusic не true -->
+    <AudioVisualizer v-if="!route.meta.hideMusic" />
+    <Header @toggleDrawer="toggleDrawer" :drawerOpen="drawerOpen" />
 
+    <!-- Main content area -->
+    <div class="flex-1 flex flex-col relative mt-3">
       <!-- Mobile overlay -->
       <transition name="fade">
         <div
-          v-if="drawerOpen"
-          class="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
-          @click="toggleDrawer"
+            v-if="drawerOpen && isMobile"
+            class="fixed inset-0 bg-black/80 z-20 pointer-events-auto"
+            style="top: 4rem;"
+            @click="toggleDrawer"
         />
       </transition>
 
-      <!-- Main content area -->
-      <div class="flex-1 flex flex-col h-full overflow-auto relative">
-        <!-- Glowing indigo half-circle trigger -->
-        <div
-          class="hidden md:block fixed left-0 top-1/2 -translate-y-1/2 z-10 h-40 w-10 overflow-visible"
-          @mouseenter="drawerOpen = true"
+      <!-- Sidebar with fixed animation -->
+      <transition name="slide">
+        <aside
+            v-if="drawerOpen && isMobile"
+            class="fixed top-16 left-0 right-0 bg-white dark:bg-gray-900 w-full z-30 shadow-xl overflow-y-auto"
+            style="max-height: calc(100vh - 4rem);"
         >
-          <div class="relative h-full w-full">
-            <!-- Glowing effect -->
-            <div
-              class="absolute left-0 top-1/2 -translate-y-1/2 h-24 w-10 rounded-r-full transition-all duration-500"
-              :class="{
-                'w-12': drawerOpen,
-                'opacity-100': drawerOpen,
-                'opacity-70': !drawerOpen
-              }"
-            >
-              <div class="relative h-full w-full">
-                <!-- Gradient circle -->
-                <div class="absolute inset-0 rounded-r-full bg-gradient-to-r from-indigo-500 to-indigo-300 opacity-80"></div>
-                <!-- Glow effect with animation -->
-                <div
-                  class="absolute inset-0 rounded-r-full bg-indigo-400 opacity-20 blur-sm transition-all duration-300"
-                  :class="{
-                    'opacity-30': drawerOpen,
-                    'w-full': drawerOpen,
-                    'w-8': !drawerOpen
-                  }"
-                ></div>
-              </div>
+          <Sidebar />
+        </aside>
+      </transition>
 
-              <!-- Burger icon -->
-              <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-                <svg
-                  class="w-5 h-5 text-white transition-transform duration-500"
-                  :class="{ 'rotate-90': drawerOpen }"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Sidebar -->
-        <transition name="slide">
-          <aside
-            v-if="drawerOpen"
-            class="fixed inset-y-0 left-0 bg-white dark:bg-gray-900 w-64 z-20 shadow-xl"
-            @mouseleave="closeSidebar"
-          >
-            <Sidebar />
-          </aside>
-        </transition>
-
-        <!-- Page content with larger padding -->
-        <main
-          class="pt-16 flex-1 overflow-auto px-8 md:px-12 lg:px-16 pb-6 transition-all duration-500"
-          :class="{ 'md:pl-16': drawerOpen }"
+      <!-- Page content -->
+      <main
+          class="flex-1 px-8 md:px-12 lg:px-16 pb-6 pt-15"
           @click="closeSidebarOnMobile"
-        >
-          <router-view />
-        </main>
+      >
+        <router-view />
+      </main>
 
-        <!-- MusicBar показываем, если hideMusic не true и MusicSidebar не видима -->
-        <footer v-if="!route.meta.hideMusic && !musicStore.isSidebarVisible" class="flex-shrink-0">
-          <MusicBar />
-        </footer>
+      <!-- Music player -->
+      <footer
+          v-if="!route.meta.hideMusic && !musicStore.isSidebarVisible && !isMobile"
+          class="fixed inset-x-0 bottom-0 flex-shrink-0 h-16 z-50 mb-4"
+      >
+        <MusicBar />
+      </footer>
 
-        <!-- Если сайдбар открыт, телепортим его в <body> -->
-        <Teleport to="body">
-          <MusicSidebar v-if="musicStore.isSidebarVisible" />
-        </Teleport>
-      </div>
+      <!-- Мобильная версия -->
+      <footer
+          v-if="isMobile && !route.meta.hideMusic"
+          class="fixed inset-x-0 bottom-0 flex-shrink-0 h-16 z-50"
+      >
+        <MobileMusicBar :audioElement="audio" />
+      </footer>
 
-      <!-- Общий audio элемент -->
-      <audio
+      <Teleport to="body">
+        <MusicSidebar v-if="!isMobile && musicStore.isSidebarVisible && !route.meta.hideMusic" />
+      </Teleport>
+    </div>
+
+    <audio
         ref="audio"
         crossorigin="anonymous"
         preload="metadata"
         class="hidden"
-      ></audio>
-    </div>
-  </template>
+    ></audio>
+  </div>
+</template>
 
-  <script setup>
-  import { ref, onMounted, onUnmounted } from 'vue';
-  import { useRoute } from 'vue-router'; // Добавляем импорт useRoute
-  import Sidebar from '@/components/Sidebar/Sidebar.vue';
-  import MusicBar from '@/components/Music/MusicBar.vue';
-  import MusicSidebar from '@/components/Music/MusicSidebar.vue';
-  import Header from '@/components/Header/Header.vue';
-  import AudioVisualizer from '@/components/AudioVisualizer/AudioVisualizer.vue';
-  import { useMusicStore } from '@/store/music';
-  import { usePlayerStore } from '@/store/player';
+<script setup>
+import { ref, onMounted, onUnmounted, provide } from 'vue';
+import Sidebar from '@/components/Sidebar/Sidebar.vue';
+import MusicBar from '@/components/Music/MusicBar.vue';
+import MobileMusicBar from '@/components/Music/MobileMusicBar.vue';
+import MusicSidebar from '@/components/MusicSidebar/MusicSidebar.vue';
+import Header from '@/components/Header/Header.vue';
+import AudioVisualizer from '@/components/AudioVisualizer/AudioVisualizer.vue';
+import { useMusicStore } from '@/store/music';
+import { usePlayerStore } from '@/store/player';
+import { useRoute } from 'vue-router';
 
-  const route = useRoute(); // Получаем текущий маршрут
+const route = useRoute();
+const musicStore = useMusicStore();
+const playerStore = usePlayerStore();
+const drawerOpen = ref(false);
+const audio = ref(null);
+const isMobile = ref(false);
 
-  const musicStore = useMusicStore();
-  const playerStore = usePlayerStore();
-  const drawerOpen = ref(false);
-  const audio = ref(null);
+function updateIsMobile() {
+  isMobile.value = window.innerWidth < 768;
+}
 
-  function toggleDrawer() {
+function toggleDrawer() {
+  if (isMobile.value) {
     drawerOpen.value = !drawerOpen.value;
   }
+}
 
-  function closeSidebar() {
-    if (window.innerWidth >= 768) {
-      drawerOpen.value = false;
-    }
+function closeSidebarOnMobile() {
+  if (isMobile.value && drawerOpen.value) {
+    drawerOpen.value = false;
   }
+}
 
-  function closeSidebarOnMobile() {
-    if (window.innerWidth < 768 && drawerOpen.value) {
-      drawerOpen.value = false;
-    }
+function closeSidebar() {
+  if (isMobile.value) {
+    drawerOpen.value = false;
   }
+}
 
-  // Инициализация audio в playerStore
-  onMounted(() => {
-    if (audio.value) {
-      playerStore.setAudioElement(audio.value);
-    }
-  });
+provide('closeSidebar', closeSidebar);
+provide('audioElement', audio);
 
-  // Очистка при размонтировании
-  onUnmounted(() => {
-    playerStore.setAudioElement(null);
-  });
-  </script>
-
-  <style scoped>
-  /* Ripple animation */
-  @keyframes ripple {
-    0% {
-      transform: scale(0);
-      opacity: 1;
-    }
-    100% {
-      transform: scale(3);
-      opacity: 0;
-    }
+onMounted(() => {
+  if (audio.value) {
+    playerStore.setAudioElement(audio.value);
   }
+  updateIsMobile();
+  window.addEventListener('resize', updateIsMobile);
+});
 
-  .animate-ripple {
-    animation: ripple 1s ease-out infinite;
-  }
+onUnmounted(() => {
+  playerStore.setAudioElement(null);
+  window.removeEventListener('resize', updateIsMobile);
+});
+</script>
 
-  /* Glow animation */
-  @keyframes glow-pulse {
-    0%, 100% { opacity: 0.7; }
-    50% { opacity: 0.9; }
-  }
+<style scoped>
+/* Плавная анимация выезжания Sidebar */
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
 
-  .glow-effect {
-    animation: glow-pulse 2s infinite;
-  }
+.slide-enter-from {
+  transform: translateY(-100%);
+  opacity: 0;
+}
 
-  /* Slide animation */
-  .slide-enter-active,
-  .slide-leave-active {
-    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-  }
+.slide-leave-to {
+  transform: translateY(-100%);
+  opacity: 0;
+}
 
-  .slide-enter-from,
-  .slide-leave-to {
-    transform: translateX(-100%);
-  }
+/* Анимация для оверлея */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
 
-  /* Fade animation */
-  .fade-enter-active,
-  .fade-leave-active {
-    transition: opacity 0.4s ease;
-  }
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
 
-  .fade-enter-from,
-  .fade-leave-to {
-    opacity: 0;
-  }
+/* Стили для скроллбара */
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
 
-  /* Smooth content movement */
-  main {
-    transition: padding 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-  }
+.custom-scroll::-webkit-scrollbar-track {
+  background: var(--color-light-bg, #fafafc);
+  border-radius: 3px;
+}
 
-  /* Prevent scrolling when sidebar is open */
-  body:has(.fixed.inset-0.bg-black.bg-opacity-50) {
-    overflow: hidden;
-  }
-  </style>
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-light-surface, #ffffff);
+  border-radius: 3px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-light-surface, #ffffff);
+  opacity: 0.8;
+}
+
+.dark .custom-scroll::-webkit-scrollbar-track {
+  background: var(--color-dark-bg, #17181c);
+}
+
+.dark .custom-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-dark-surface, #26272c);
+}
+
+.dark .custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-dark-surface, #26272c);
+  opacity: 0.8;
+}
+</style>

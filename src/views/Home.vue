@@ -117,9 +117,9 @@
                         </div>
                     </div>
                 </div>
-                <div class="text-left">
-                    <h1 class="text-xl font-bold">Визуализация музыки</h1>
-                </div>
+              <MiniVisualizer class="text-left">
+                <h1 class="text-xl font-bold">Визуализация музыки</h1>
+              </MiniVisualizer>
                 <div class="text-left">
                     <h1 class="text-xl font-bold">Лайки</h1>
                     <span class="text-sm text-gray-400">сохраняйте понравившееся</span>
@@ -206,6 +206,7 @@ import WrenchScrewdriverIcon from '@/components/icons/WrenchScrewdriverIcon.vue'
   import image2 from '@/assets/home/image2.jpg';
   import image3 from '@/assets/home/image3.jpg';
   import image4 from '@/assets/home/image4.jpg';
+  import MiniVisualizer from "@/components/AudioVisualizer/MiniVisualizer.vue";
 
   const imageSources = [image1, image2, image3, image4];
 
