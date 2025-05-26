@@ -5,8 +5,8 @@
     <canvas
         v-if="isAnimationEnabled"
         ref="canvas"
-        class="absolute inset-0 w-full h-full blur-[3px] transition-opacity duration-300"
-        :class="{ 'opacity-50': isContentPage, 'opacity-100': !isContentPage }"
+        class="absolute inset-0 w-full h-full blur-[3px] animate opacityanim"
+
     ></canvas>
     <!-- Контент блока -->
     <div class="relative z-10 p-4 flex flex-col gap-2">
