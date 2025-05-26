@@ -44,6 +44,7 @@
   let mouseActive = false;
   let mousePos = { x: 0, y: 0 };
   let animationFrameId = null;
+  let themeObserver = null;
 
   // Frame rate limiting
   let lastFrameTime = 0;
@@ -109,9 +110,7 @@
       mutations.forEach((mutation) => {
         if (mutation.attributeName === 'class') {
           shouldRedrawBackground.value = true;
-          if (!shouldAnimate.value) {
-            updateCanvasBackground();
-          }
+          updateCanvasBackground();
         }
       });
     });
@@ -298,6 +297,8 @@
   onMounted(() => {
     try {
       init();
+      initCanvas();
+      themeObserver = observeThemeChanges();
       if (canvas.value) {
         canvas.value.addEventListener('mousemove', mouseMoveHandler);
         canvas.value.addEventListener('mouseleave', mouseLeaveHandler);
@@ -317,6 +318,9 @@
         canvas.value.removeEventListener('mouseleave', mouseLeaveHandler);
       }
       window.removeEventListener('resize', onResize);
+      if (themeObserver) {
+        themeObserver.disconnect();
+      }
       if (audioContext && audioContext.state !== 'closed') {
         console.log('Closing audioContext, state:', audioContext.state);
         audioContext.close();
@@ -335,7 +339,8 @@
     } else if (!newPlaying && animationFrameId) {
       cancelAnimationFrame(animationFrameId);
       animationFrameId = null;
-      clearCanvas();
+      shouldRedrawBackground.value = true;
+      updateCanvasBackground();
     }
   });
 
