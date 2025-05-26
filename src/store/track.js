@@ -95,6 +95,17 @@ export const useTrackStore = defineStore('track', {
       }
     },
 
+    async reportTrack(trackId) {
+      const auth = useAuthStore();
+      if (!auth.userId) throw new Error('Not logged in');
+      try {
+        await trackService.reportTrack(auth.userId, trackId);
+      } catch (error) {
+        console.error('Report track error:', error);
+        throw error;
+      }
+    },
+
     async playTrack(trackId) {
       await usePlayerStore().playTrack(trackId);
     },

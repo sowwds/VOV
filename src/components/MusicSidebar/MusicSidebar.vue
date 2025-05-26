@@ -221,14 +221,6 @@
       <QueueSidebar />
     </div>
 
-    <!-- Audio элемент -->
-<!--    <audio-->
-<!--        ref="audio"-->
-<!--        crossorigin="anonymous"-->
-<!--        :src="currentTrack?.streamUrl"-->
-<!--        preload="metadata"-->
-<!--        class="hidden"-->
-<!--    ></audio>-->
   </div>
 </template>
 
@@ -260,7 +252,7 @@ const toast = useToast();
 
 // Layout
 const headerHeight = 64;
-const defaultCover = 'https://via.placeholder.com/160';
+const defaultCover = 'src/assets/question-svg.svg';
 
 // State & refs
 const showVolumeHint = ref(false);
