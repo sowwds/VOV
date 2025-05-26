@@ -1,7 +1,7 @@
 # vov_proj
 
 Тестовый билд
-[голос-победыь.рф](http://xn----btbege7aubbju0k.xn--p1ai/)
+[голос-победы.рф](http://xn----btbege7aubbju0k.xn--p1ai/)
 
 ## Recommended IDE Setup
 
