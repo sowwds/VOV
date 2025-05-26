@@ -1,11 +1,11 @@
 <template>
-    <div id="pageContent">
+    <div id="pageContent" class="-mb-6 -mt-15 -mx-8 md:-mx-12 lg:-mx-16">
       <!-- Контейнер для звёзд -->
       <div id="stars"></div>
       <div id="stars2"></div>
       <div id="stars3"></div>
       <!-- Контейнер для прокрутки изображений -->
-      <div class="h-screen relative z-0">
+      <div class="h-screen relative z-0 overflow-hidden">
         <div id="titles">
           <div id="titlecontent">
             <div v-for="(row, rowIndex) in imageRows" :key="rowIndex" class="image-row">
@@ -354,7 +354,6 @@
   }
 
   #pageContent {
-    margin: -64px;
     padding: 0;
     background: radial-gradient(ellipse at bottom, #352a1b 0%, #0f0d09 100%);
   }
