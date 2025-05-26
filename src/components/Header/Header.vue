@@ -1,6 +1,6 @@
 <template>
   <header
-      class="fixed top-0 left-0 right-0 h-16 bg-light-bg dark:bg-dark-bg flex items-center px-6 z-10"
+      class="fixed top-0 left-0 right-0 h-16 bg-light-bg dark:bg-dark-bg flex items-center px-6 z-50"
   >
     <!-- Mobile burger -->
     <button
