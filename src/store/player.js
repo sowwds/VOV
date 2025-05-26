@@ -104,6 +104,12 @@ export const usePlayerStore = defineStore('player', () => {
     }
 
     function setAudioElement(el) {
+        console.log('setAudioElement called with:', el);
+        if (!el) {
+            console.warn('Attempted to set audioElement to null, ignoring to prevent playback interruption');
+            return; // Игнорируем сброс audioElement
+        }
+
         // Очищаем старые обработчики, если audioElement существует
         if (audioElement.value) {
             audioElement.value.onloadedmetadata = null;
@@ -112,23 +118,22 @@ export const usePlayerStore = defineStore('player', () => {
             audioElement.value.onended = null;
             audioElement.value.onplay = null;
             audioElement.value.onpause = null;
+            audioElement.value.onerror = null;
         }
 
         audioElement.value = el;
-        if (!el) return; // Проверка на null/undefined
-
         el.volume = isMuted.value ? 0 : volume.value;
         el.loop = loopMode.value === 'one';
 
-        // Проверяем, что элемент существует перед установкой обработчиков
         el.onloadedmetadata = () => {
             if (!audioElement.value) return;
             duration.value = el.duration || 0;
             currentTime.value = 0;
+            console.log('Audio metadata loaded, duration:', el.duration);
         };
 
         el.ontimeupdate = throttle(() => {
-            if (!audioElement.value) return; // Защита от null
+            if (!audioElement.value) return;
             currentTime.value = el.currentTime;
             if (el.buffered.length > 0 && duration.value > 0) {
                 const bufferedEnd = el.buffered.end(el.buffered.length - 1);
@@ -137,7 +142,7 @@ export const usePlayerStore = defineStore('player', () => {
         }, 200);
 
         el.onprogress = throttle(() => {
-            if (!audioElement.value) return; // Защита от null
+            if (!audioElement.value) return;
             if (el.buffered.length > 0 && duration.value > 0) {
                 const bufferedEnd = el.buffered.end(el.buffered.length - 1);
                 bufferedProgress.value = (bufferedEnd / duration.value) * 100;
@@ -154,10 +159,17 @@ export const usePlayerStore = defineStore('player', () => {
         el.onplay = () => {
             if (!audioElement.value) return;
             isPlaying.value = true;
+            console.log('Audio started playing');
         };
 
         el.onpause = () => {
             if (!audioElement.value) return;
+            isPlaying.value = false;
+            console.log('Audio paused');
+        };
+
+        el.onerror = () => {
+            console.error('Audio error:', el.error);
             isPlaying.value = false;
         };
     }

@@ -87,6 +87,20 @@ export const trackService = {
     return data;
   },
 
+  async reportTrack(userId, trackId) {
+    try {
+      const response = await api.post('/public-library/complaints', {
+        userId: String(userId), // Преобразуем userId в строку
+        trackId, // trackId уже строка (UUID)
+      });
+      console.log('Report track success:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Report track error:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
   async getTrackMetadata(trackId) {
     const { data } = await api.get(`/public-library/${trackId}`);
     console.log(data);

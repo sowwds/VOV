@@ -1,7 +1,7 @@
 <template>
   <div class="flex min-h-screen h-full overflow-auto flex-col custom-scroll">
     <!-- AudioVisualizer показываем только если hideMusic не true -->
-    <AudioVisualizer v-if="!route.meta.hideMusic" />
+    <AudioVisualizer v-show="!route.meta.hideMusic" />
     <Header @toggleDrawer="toggleDrawer" :drawerOpen="drawerOpen" />
 
     <!-- Main content area -->
@@ -37,7 +37,7 @@
 
       <!-- Music player -->
       <footer
-          v-if="!route.meta.hideMusic && !musicStore.isSidebarVisible && !isMobile"
+          v-show="!route.meta.hideMusic && !musicStore.isSidebarVisible && !isMobile"
           class="fixed inset-x-0 bottom-0 flex-shrink-0 h-16 z-50 mb-4"
       >
         <MusicBar />
@@ -45,14 +45,14 @@
 
       <!-- Мобильная версия -->
       <footer
-          v-if="isMobile && !route.meta.hideMusic"
+          v-show="isMobile && !route.meta.hideMusic"
           class="fixed inset-x-0 bottom-0 flex-shrink-0 h-16 z-50"
       >
         <MobileMusicBar :audioElement="audio" />
       </footer>
 
       <Teleport to="body">
-        <MusicSidebar v-if="!isMobile && musicStore.isSidebarVisible && !route.meta.hideMusic" />
+        <MusicSidebar v-show="!isMobile && musicStore.isSidebarVisible && !route.meta.hideMusic" />
       </Teleport>
     </div>
 
@@ -66,7 +66,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, provide } from 'vue';
+import { ref, onMounted, onUnmounted, provide, watch } from 'vue';
 import Sidebar from '@/components/Sidebar/Sidebar.vue';
 import MusicBar from '@/components/Music/MusicBar.vue';
 import MobileMusicBar from '@/components/Music/MobileMusicBar.vue';
@@ -110,6 +110,7 @@ provide('closeSidebar', closeSidebar);
 provide('audioElement', audio);
 
 onMounted(() => {
+  console.log('MainLayout mounted, setting audio element:', audio.value);
   if (audio.value) {
     playerStore.setAudioElement(audio.value);
   }
@@ -117,9 +118,23 @@ onMounted(() => {
   window.addEventListener('resize', updateIsMobile);
 });
 
+// Восстанавливаем audioElement при смене маршрута
+watch(
+    () => route.path,
+    (newPath) => {
+      console.log('Route changed:', newPath, 'hideMusic:', route.meta.hideMusic);
+      if (audio.value && !playerStore.audioElement) {
+        console.warn('Audio element lost, resetting in playerStore');
+        playerStore.setAudioElement(audio.value);
+      }
+    },
+    { immediate: true }
+);
+
 onUnmounted(() => {
-  playerStore.setAudioElement(null);
+  console.log('MainLayout unmounted, removing resize listener');
   window.removeEventListener('resize', updateIsMobile);
+  // НЕ сбрасываем audioElement, чтобы сохранить воспроизведение
 });
 </script>
 

@@ -86,7 +86,7 @@
         <!-- Новые треки -->
         <div class="mt-8">
           <h3 class="text-lg mb-4">Новые треки</h3>
-          <div class="flex flex-col space-y-2">
+          <div class="flex flex-col space-y-2 pb-16 ">
             <TrackRow
               v-for="t in trackStore.newTracks"
               :key="t.trackId"

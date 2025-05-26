@@ -12,7 +12,7 @@
           <div v-show="!isExpanded" class="flex items-center gap-3 px-4 h-9">
             <img
                 v-if="avatarUrl"
-                :src="avatarUrl"
+                :src="avatarUrl || defaultCover"
                 class="w-8 h-8 rounded-full object-cover"
                 alt="User avatar"
             >
@@ -92,6 +92,7 @@
   const router = useRouter();
   const authStore = useAuthStore();
   const { avatarUrl, fullName, email } = storeToRefs(authStore);
+  const defaultCover = 'src/assets/question-svg.svg';
 
   const isExpanded = ref(false);
   const dropdown = ref(null);

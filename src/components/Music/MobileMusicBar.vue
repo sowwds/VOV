@@ -214,15 +214,12 @@
         </div>
       </div>
     </transition>
-
-    <!-- Audio element -->
-
   </div>
 </template>
 
 <script setup>
 import QueuePopOver from '@/components/Music/QueuePopOver.vue';
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { usePlayerStore } from '@/store/player';
 import { useTrackStore } from '@/store/track';
 import { useToast } from 'vue-toastification';
@@ -239,6 +236,13 @@ import {
   InformationCircleIcon,
 } from '@heroicons/vue/24/outline';
 
+defineProps({
+  audioElement: {
+    type: Object,
+    default: null,
+  },
+});
+
 const playerStore = usePlayerStore();
 const trackStore = useTrackStore();
 const toast = useToast();
@@ -252,7 +256,6 @@ const touchStartY = ref(0);
 const touchCurrentY = ref(0);
 const isSwiping = ref(false);
 const coverImage = ref(null);
-const audioRef = ref(null);
 const dominantColor = ref([0, 0, 0]);
 const secondaryColor = ref([0, 0, 0]);
 const swipeStartX = ref(0);
@@ -467,16 +470,6 @@ function updateBackgroundColor() {
 }
 
 // Lifecycle hooks
-onMounted(() => {
-  if (audioRef.value) {
-    playerStore.setAudioElement(audioRef.value);
-  }
-});
-
-onUnmounted(() => {
-  playerStore.setAudioElement(null);
-});
-
 watch(currentTrack, () => {
   if (coverImage.value?.complete) updateBackgroundColor();
 });

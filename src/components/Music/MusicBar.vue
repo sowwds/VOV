@@ -43,6 +43,33 @@
           </div>
         </transition>
       </div>
+      <div
+          class="relative"
+          @mouseenter="handleMouseEnter"
+          @mouseleave="handleMouseLeave"
+      >
+        <button
+            class="p-2 rounded text-light-text dark:text-dark-text hover:scale-110 active:scale-95 transition-transform duration-200"
+            title="Пожаловаться на трек"
+        >
+          <FlagIcon class="w-5 h-5" />
+        </button>
+        <transition name="fade">
+          <div
+              v-if="showReportTooltip && currentTrack"
+              @mouseleave="handleTooltipMouseLeave"
+              class="absolute left-1/2 -translate-x-1/2 bottom-12 w-64 p-3 bg-light-bg dark:bg-dark-bg rounded shadow-lg text-sm text-light-text dark:text-dark-text z-10"
+          >
+            <p class="mb-2">Пожаловаться на трек "{{ currentTrack?.title || 'Трек' }}"</p>
+            <button
+                @click="onReportTrack"
+                class="w-full px-3 py-1 rounded-md text-sm bg-light-primary dark:bg-dark-primary text-light-text dark:text-dark-text hover:bg-light-primary/80 dark:hover:bg-dark-primary/80 transition-colors"
+            >
+              Пожаловаться
+            </button>
+          </div>
+        </transition>
+      </div>
     </div>
 
     <div class="flex flex-col items-center flex-1">
@@ -216,6 +243,7 @@ import {
   SpeakerXMarkIcon,
   QueueListIcon,
   InformationCircleIcon,
+  FlagIcon,
 } from '@heroicons/vue/24/outline';
 
 defineProps({
@@ -233,8 +261,10 @@ const toast = useToast();
 const showVolumeHint = ref(false);
 const showQueue = ref(false);
 const showInfoTooltip = ref(false);
+const showReportTooltip = ref(false);
 const currentVersion = ref('processed');
-const defaultCover = 'https://via.placeholder.com/48';
+let tooltipTimeout = null;
+const defaultCover = 'src/assets/question-svg.svg';
 
 const currentTrack = computed(() => playerStore.currentTrack);
 const isInLibrary = computed(() =>
@@ -272,6 +302,40 @@ async function onToggleLibrary() {
     toast.error('Не удалось обновить коллекцию');
   }
 }
+
+async function onReportTrack() {
+  if (!currentTrack.value?.trackId) {
+    toast.error('Не выбран трек для жалобы');
+    return;
+  }
+  try {
+    await trackStore.reportTrack(currentTrack.value.trackId);
+    toast.success('Жалоба отправлена');
+    showReportTooltip.value = false; // Закрываем окно после отправки
+    clearTimeout(tooltipTimeout);
+  } catch (error) {
+    console.error('Report track error:', error);
+    toast.error('Не удалось отправить жалобу');
+  }
+}
+
+const handleMouseEnter = () => {
+  clearTimeout(tooltipTimeout); // Сбрасываем таймер при наведении
+  showReportTooltip.value = true;
+};
+
+const handleMouseLeave = () => {
+  tooltipTimeout = setTimeout(() => {
+    showReportTooltip.value = false;
+  }, 1000);
+};
+
+const handleTooltipMouseLeave = () => {
+  // Закрываем окно сразу, если покинули само окно
+  clearTimeout(tooltipTimeout); // Очищаем таймер
+  showReportTooltip.value = false;
+};
+
 
 function onShuffle() {
   playerStore.toggleShuffle();
