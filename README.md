@@ -1,6 +1,7 @@
 # vov_proj
 
-This template should help get you started developing with Vue 3 in Vite.
+Тестовый билд
+[голос-победыь.рф](http://xn----btbege7aubbju0k.xn--p1ai/)
 
 ## Recommended IDE Setup
 
