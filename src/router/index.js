@@ -9,9 +9,7 @@ import BlankLayout from '@/components/Layout/BlankLayout.vue';
 import Home from '@/views/Home.vue';
 import Restoration from '@/views/Restoration.vue';
 import Collection from '@/views/Collection.vue';
-import ProfileSettings from '@/views/ProfileSettings.vue';
 import Library from '@/views/Library.vue';
-import WW2Map from '@/views/WW2Map.vue';
 import Login from '@/views/Login.vue';
 import Callback from '@/views/Callback.vue';
 
@@ -22,16 +20,22 @@ const routes = [
     component: MainLayout,
     beforeEnter: (to, from, next) => {
       const authStore = useAuthStore();
-      if (!authStore.token) return next('/login');
-      next();
+      // Если это Home ('/'), пропускаем без проверки токена
+      if (to.path === '/') {
+        next();
+      }
+      // Для остальных маршрутов проверяем токен
+      else if (!authStore.token) {
+        next('/login');
+      } else {
+        next();
+      }
     },
     children: [
-      { path: '', name: 'Главная', component: Home },
+      { path: '', name: 'Главная', component: Home, meta: { hideMusic: true } },
       { path: 'restoration', name: 'Реставрация', component: Restoration },
-      { path: 'collection', name: 'Коллекция', component: Collection },
-      { path: 'profile-settings', name: 'Настройки профиля', component: ProfileSettings },
-      { path: 'library', name: 'Library', component: Library },
-      { path: 'map', name: 'WW2Map', component: WW2Map },
+      { path: 'collection', name: 'Коллекция', component: Collection, meta: {keepAlive: true}},
+      { path: 'library', name: 'Library', component: Library, meta: {keepAlive: true} },
     ],
   },
 
