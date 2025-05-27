@@ -14,40 +14,19 @@ import Login from '@/views/Login.vue';
 import Callback from '@/views/Callback.vue';
 
 const routes = [
-  // Все страницы с шапкой / сайдбаром / футером
   {
     path: '/',
     component: MainLayout,
-    beforeEnter: (to, from, next) => {
-      const authStore = useAuthStore();
-      // Если это Home ('/'), пропускаем без проверки токена
-      if (to.path === '/') {
-        next();
-      }
-      // Для остальных маршрутов проверяем токен
-      else if (!authStore.token) {
-        next('/login');
-      } else {
-        next();
-      }
-    },
     children: [
       { path: '', name: 'Главная', component: Home, meta: { hideMusic: true } },
-      { path: 'restoration', name: 'Реставрация', component: Restoration },
-      { path: 'collection', name: 'Коллекция', component: Collection, meta: {keepAlive: true}},
-      { path: 'library', name: 'Library', component: Library, meta: {keepAlive: true} },
+      { path: 'restoration', name: 'Реставрация', component: Restoration, meta: { requiresAuth: true } },
+      { path: 'collection', name: 'Коллекция', component: Collection, meta: { requiresAuth: true, keepAlive: true } },
+      { path: 'library', name: 'Library', component: Library, meta: { requiresAuth: true, keepAlive: true } },
     ],
   },
-
-  // Страницы без лейаута
   {
     path: '/login',
     component: BlankLayout,
-    beforeEnter: (to, from, next) => {
-      const authStore = useAuthStore();
-      if (authStore.token) return next('/');
-      next();
-    },
     children: [
       { path: '', name: 'Login', component: Login },
     ],
@@ -64,6 +43,28 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+});
+
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore();
+
+  // Загружаем данные пользователя, если есть токен и user еще не загружен
+  if (authStore.token && !authStore.user) {
+    await authStore.initialize(); // Предполагается, что initialize вызывает fetchUser
+  }
+
+  // Если маршрут требует авторизации и пользователь не авторизован
+  if (to.meta.requiresAuth && !authStore.user) {
+    next('/login');
+  }
+  // Если пользователь авторизован и пытается зайти на страницу логина
+  else if (to.path === '/login' && authStore.user) {
+    next('/');
+  }
+  // В остальных случаях пропускаем
+  else {
+    next();
+  }
 });
 
 export default router;
