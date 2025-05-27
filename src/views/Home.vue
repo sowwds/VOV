@@ -1,19 +1,22 @@
 <template>
-    <div id="pageContent" class="-mb-6 -mt-15 -mx-8 md:-mx-12 lg:-mx-16">
+    <div id="pageContent" class="-mb-6 -mt-15 -mx-8 md:-mx-12 lg:-mx-16 overflow-hidden">
       <!-- Контейнер для звёзд -->
       <div id="stars"></div>
       <div id="stars2"></div>
       <div id="stars3"></div>
       <!-- Контейнер для прокрутки изображений -->
-      <div class="h-screen relative z-0 overflow-hidden">
-        <div id="titles">
+      <div class="h-screen relative">
+        <div id="titles" class = "hidden sm:block">
           <div id="titlecontent">
             <div v-for="(row, rowIndex) in imageRows" :key="rowIndex" class="image-row">
               <img v-for="(src, colIndex) in row" :key="colIndex" :src="src" alt="Crawl image" class="crawl-image" />
             </div>
           </div>
         </div>
-        <div class="mt-60 absolute left-1/2 transform -translate-x-1/2">
+        <div class="home-container sm:hidden" ref="particleContainer">
+            <!-- Частицы будут добавлены сюда динамически -->
+        </div>
+        <div class="top-40 absolute left-1/2 transform -translate-x-1/2">
           <div class="flex mx-auto justify-around">
             <div class="text-center text-dark-text flex flex-col">
               <h1 class="animate text-4xl sm:text-6xl font-bold mb-6
@@ -183,7 +186,7 @@
   </template>
 
   <script setup>
-  import { onMounted } from 'vue';
+  import { ref, onMounted, onUnmounted } from 'vue';
   import {
     HeartIcon,
     BuildingLibraryIcon,
@@ -209,6 +212,15 @@
   const imageRows = Array.from({ length: rows }, () =>
     Array.from({ length: imagesPerRow }, () => imageSources[Math.floor(Math.random() * imageSources.length)])
   );
+  // анимация для мобилки
+// Ссылка на контейнер для добавления частиц
+const particleContainer = ref(null);
+
+// Список импортированных изображений
+const images = [image1, image2];
+
+
+
 
   // Функция для генерации box-shadow для звёзд
   const generateBoxShadow = (n) => {
@@ -250,10 +262,126 @@
     const allAnimatedElements = document.querySelectorAll('.animate');
     console.log('Found animated elements:', allAnimatedElements.length); // Отладка
     allAnimatedElements.forEach((element) => observer.observe(element));
+    // Создаем новую частицу каждые 1 секунду
+    const interval = setInterval(() => {
+      createParticle();
+    }, 2000);
+
+    // Логируем размеры контейнера при изменении окна
+    const logContainerSize = () => {
+      if (particleContainer.value) {
+        const { width, height } = particleContainer.value.getBoundingClientRect();
+        console.log('Container size:', { width, height });
+      }
+    };
+    window.addEventListener('resize', logContainerSize);
+    logContainerSize(); // Логируем начальный размер
+
+    // Очищаем интервал и обработчик при размонтировании
+    onUnmounted(() => {
+      clearInterval(interval);
+      window.removeEventListener('resize', logContainerSize);
+    });
   });
+  function createParticle() {
+    const img = document.createElement('img');
+    img.src = getRandomImage();
+    img.className = 'particle';
+    img.style.position = 'absolute';
+
+    // Определяем случайный край (верх, низ, лево, право)
+    const edge = getRandomEdge();
+    let left, top;
+
+    if (edge === 'top') {
+      left = Math.random() * 100;
+      top = 0;
+    } else if (edge === 'bottom') {
+      left = Math.random() * 100;
+      top = 100;
+    } else if (edge === 'left') {
+      left = 0;
+      top = Math.random() * 100;
+    } else if (edge === 'right') {
+      left = 100;
+      top = Math.random() * 100;
+    }
+
+    // Устанавливаем начальные стили
+    img.style.left = `${left}%`;
+    img.style.top = `${top}%`;
+    img.style.transform = 'translate(-50%, -50%) scale(1)';
+    img.style.width = `${Math.random() * 200 + 200}px`; // Размер от 300 до 600 пикселей
+    img.style.height = 'auto';
+    img.style.opacity = '0';
+    img.style.zIndex = '0';
+
+    // Сохраняем начальные left и top для анимации (на случай отката)
+    img.style.setProperty('--start-left', `${left}%`);
+    img.style.setProperty('--start-top', `${top}%`);
+
+    // Логируем создание частицы
+    console.log('Particle created:', { src: img.src, left, top });
+
+    // Добавляем частицу
+    particleContainer.value.appendChild(img);
+
+    // Удаляем частицу после анимации (5 секунд)
+    setTimeout(() => {
+      if (img.parentNode) {
+        particleContainer.value.removeChild(img);
+        console.log('Particle removed:', { src: img.src });
+      }
+    }, 10000);
+  }
+
+  function getRandomImage() {
+    return images[Math.floor(Math.random() * images.length)];
+  }
+
+  function getRandomEdge() {
+    const edges = ['top', 'bottom', 'left', 'right'];
+    return edges[Math.floor(Math.random() * edges.length)];
+  }
   </script>
 
   <style>
+    .home-container {
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: visible;
+  }
+
+  .particle {
+    animation: particleAnimation 10s ;
+    pointer-events: none;
+  }
+
+  @keyframes particleAnimation {
+    0% {
+      left: var(--start-left);
+      top: var(--start-top);
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 0;
+      filter: blur(10px);
+    }
+    50% {
+      /* left: calc(var(--start-left) + (50% - var(--start-left)) / 2);
+      top: calc(var(--start-top) + (50% - var(--start-top)) / 2);
+      transform: translate(-50%, -50%) scale(0.5); */
+      opacity: 1;
+      filter: blur(0px);
+    }
+    100% {
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      opacity: 0;
+      filter: blur(10px);
+    }
+  }
   /* Появление текста */
   @keyframes text-appearance-anim {
     from {
@@ -418,13 +546,15 @@
 
   #titles {
     position: absolute;
-    width: 18em;
-    height: 50em;
+    /* width: 63rem;
+    height: 175rem; */
+    width: 1008px;
+    height: 2800px;
     bottom: 0;
     left: 50%;
-    margin-left: -9em;
-    font-size: 350%;
-    overflow: hidden;
+    margin-left: -504px;
+    /* font-size: 350%; */
+    /* overflow: hidden; */
     transform-origin: 50% 100%;
     transform: perspective(300px) rotateX(25deg);
     background-color: transparent;
