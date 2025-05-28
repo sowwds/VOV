@@ -46,7 +46,7 @@
       <!-- Мобильная версия -->
       <footer
           v-show="isMobile && !route.meta.hideMusic"
-          class="fixed inset-x-0 bottom-0 flex-shrink-0 h-16 z-50"
+          class="fixed inset-x-0 bottom-0 flex-shrink-0 h-16 z-150"
       >
         <MobileMusicBar :audioElement="audio" />
       </footer>
