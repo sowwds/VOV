@@ -5,7 +5,7 @@
       <div class="flex overflow-auto transition-colors duration-150 justify-center">
         <div class="flex flex-wrap justify-start gap-5">
           <TrackCard
-            class="w-60"
+            class="w-38 sm:w-60"
               v-for="t in userLibrary"
               :key="t.trackId"
               :track="t"
