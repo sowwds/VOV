@@ -1,5 +1,5 @@
 <template>
-    <div class="ml-auto mr-auto w-full max-w-screen-lg text-light-text dark:text-dark-text">
+    <div class="ml-auto mr-auto w-full mt-16 mb-16 max-w-screen-lg text-light-text dark:text-dark-text">
       <!-- Поиск -->
       <div class="flex flex-wrap justify-center mb-10 align-center">
         <SearchInput

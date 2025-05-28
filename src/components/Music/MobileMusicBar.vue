@@ -35,69 +35,142 @@
           @touchmove="onTouchMove"
           @touchend="onTouchEnd"
       >
-        <!-- Swipe handle -->
-        <div class="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1 bg-gray-400 dark:bg-gray-600 rounded-full"></div>
+        <!-- Swipe handle and close button -->
+        <div class="absolute top-0 left-0 right-0">
+          <button
+              @click="toggleFullscreen"
+              class="absolute top-4 left-4 p-2 hover:scale-110 active:scale-95 transition-transform duration-200"
+              aria-label="Close fullscreen"
+          >
+            <ChevronDownIcon class="w-6 h-6 text-white"/>
+          </button>
+          <div class="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-gray-400 dark:bg-gray-600 rounded-full"></div>
+        </div>
 
+        <!-- Mini player when overlay is open -->
+        <transition name="fade">
+          <div
+              v-if="showQueueOverlay || showLyricsOverlay"
+              class="absolute top-0 left-0 right-0 px-4 py-2 flex items-center space-x-3 z-60 border-b border-gray-200 dark:border-gray-700"
+              :style="miniPlayerBackground"
+          >
+            <img
+                :src="currentTrack?.coverUrl || defaultCover"
+                alt="Cover"
+                class="w-10 h-10 object-cover rounded bg-gray-100 dark:bg-gray-700 flex-shrink-0"
+            />
+            <div class="flex flex-col truncate flex-1 min-w-0">
+              <p class="text-sm font-semibold text-white truncate">
+                {{ currentTrack?.title || 'Трек' }}
+              </p>
+              <p class="text-xs text-light-text-muted dark:text-dark-text-muted truncate">
+                {{ currentTrack?.author || 'Исполнитель' }}
+              </p>
+            </div>
+            <button
+                @click="onTogglePlay"
+                class="p-2 rounded-full hover:scale-110 active:scale-95 transition-transform duration-200"
+            >
+              <component :is="playerStore.isPlaying ? PauseIcon : PlayIcon" class="w-6 h-6 text-white"/>
+            </button>
+          </div>
+        </transition>
+
+        <!-- Track cover and controls -->
         <div
-            class="relative flex justify-center w-full"
-            style="margin-top: 15px; margin-bottom: 25px;"
+            v-if="!showQueueOverlay && !showLyricsOverlay"
+            class="relative flex justify-center w-full overflow-hidden"
+            style="margin-top: 15px; margin-bottom: 25px; height: 60vh;"
             @touchstart="startSwipe"
             @touchmove="moveSwipe"
             @touchend="endSwipe"
         >
-          <!-- Previous track cover -->
-          <div
-              v-if="prevTrack?.coverUrl"
-              class="absolute w-1/4 max-w-[100px] h-full top-0 overflow-hidden z-10"
-              :style="prevTrackStyle"
-          >
-            <img
-                :src="prevTrack.coverUrl || defaultCover"
-                alt="Previous Cover"
-                class="object-cover w-full h-full"
-            />
+          <!-- Контейнер для всех обложек -->
+          <div class="relative w-full h-full flex items-center justify-center">
+            <!-- Previous track cover (слева) -->
+            <div
+                v-if="prevTrack?.coverUrl"
+                class="absolute left-0 z-10 w-1/4 max-w-[100px] h-3/4"
+                :style="{
+        transform: `translateX(${-100 + (swipeOffset * 0.3)}%) scale(0.8)`,
+        opacity: 0.6 - Math.abs(swipeOffset) / 500,
+        transition: isSwipingCover ? 'none' : 'all 0.5s ease'
+      }"
+            >
+              <img
+                  :src="prevTrack.coverUrl || defaultCover"
+                  alt="Previous Cover"
+                  class="object-cover w-full h-full rounded-lg shadow-lg"
+              />
+            </div>
+
+            <!-- Current track cover (центр) -->
+            <div
+                class="relative z-20 transition-all duration-500 ease-in-out"
+                :style="{
+        transform: `translateX(${swipeOffset}px) scale(${1 - Math.abs(swipeOffset) / 1000})`,
+        opacity: 1 - Math.abs(swipeOffset) / 500,
+        zIndex: 20
+      }"
+            >
+              <img
+                  ref="coverImage"
+                  :src="currentTrack?.coverUrl || defaultCover"
+                  alt="Cover"
+                  @load="updateBackgroundColor"
+                  crossorigin="anonymous"
+                  style="width: 75vw; max-width: 360px;"
+                  class="aspect-square object-cover rounded-lg shadow-lg"
+              />
+            </div>
+
+            <!-- Next track cover (справа) -->
+            <div
+                v-if="nextTrack?.coverUrl"
+                class="absolute right-0 z-10 w-1/4 max-w-[100px] h-3/4"
+                :style="{
+        transform: `translateX(${100 + (swipeOffset * 0.3)}%) scale(0.8)`,
+        opacity: 0.6 - Math.abs(swipeOffset) / 500,
+        transition: isSwipingCover ? 'none' : 'all 0.5s ease'
+      }"
+            >
+              <img
+                  :src="nextTrack.coverUrl || defaultCover"
+                  alt="Next Cover"
+                  class="object-cover w-full h-full rounded-lg shadow-lg"
+              />
+            </div>
+
+            <!-- Incoming track (для анимации) -->
+            <div
+                v-if="(nextCoverUrl || prevCoverUrl) && isSwipingCover"
+                class="absolute z-30 transition-all duration-500 ease-in-out"
+                :style="{
+        transform: incomingTransform,
+        opacity: incomingOpacity,
+        width: '75vw',
+        maxWidth: '360px'
+      }"
+            >
+              <img
+                  :src="nextCoverUrl || prevCoverUrl"
+                  alt="Incoming Cover"
+                  class="aspect-square object-cover rounded-lg shadow-lg w-full"
+              />
+            </div>
           </div>
 
-          <!-- Current track cover -->
-          <div
-              class="relative z-20"
-              :style="currentTrackStyle"
-          >
-            <img
-                ref="coverImage"
-                :src="currentTrack?.coverUrl || defaultCover"
-                alt="Cover"
-                @load="updateBackgroundColor"
-                crossorigin="anonymous"
-                style="width: calc(75% + 60px); max-width: 360px;"
-                class="aspect-square object-cover rounded-lg shadow-lg"
-            />
-          </div>
-
-          <!-- Next track cover -->
-          <div
-              v-if="nextTrack?.coverUrl"
-              class="absolute w-1/4 max-w-[100px] h-full top-0 overflow-hidden z-10"
-              :style="nextTrackStyle"
-          >
-            <img
-                :src="nextTrack.coverUrl || defaultCover"
-                alt="Next Cover"
-                class="object-cover w-full h-full"
-            />
-          </div>
-
-          <!-- Swipe direction indicator -->
+          <!-- Индикатор направления свайпа -->
           <div
               v-if="isSwipingCover"
-              class="absolute inset-0 flex items-center justify-center z-30 pointer-events-none"
+              class="absolute inset-0 flex items-center justify-center z-40 pointer-events-none"
           >
             <div
                 class="w-16 h-16 rounded-full bg-black bg-opacity-50 flex items-center justify-center"
                 :style="{
-                  transform: `translateX(${swipeOffset / 2}px)`,
-                  opacity: Math.min(Math.abs(swipeOffset) / 50, 0.7)
-                }"
+        transform: `translateX(${swipeOffset / 4}px)`,
+        opacity: Math.min(Math.abs(swipeOffset) / 200, 0.7)
+      }"
             >
               <component
                   :is="swipeOffset > 0 ? ChevronLeftIcon : ChevronRightIcon"
@@ -108,9 +181,9 @@
         </div>
 
         <!-- Controls -->
-        <div class="flex-1 flex flex-col justify-end pb-6">
+        <div class="flex-1 flex flex-col justify-end pb-6" :class="{ 'mt-16': showQueueOverlay || showLyricsOverlay }">
           <!-- Track info -->
-          <div class="flex items-center justify-between mb-4 px-2">
+          <div v-if="!showQueueOverlay && !showLyricsOverlay" class="flex items-center justify-between mb-4 px-2">
             <div class="flex flex-col truncate max-w-[60%]">
               <p class="text-lg font-semibold text-white truncate">
                 {{ currentTrack?.title || 'Трек' }}
@@ -148,7 +221,7 @@
           </div>
 
           <!-- Progress bar -->
-          <div class="flex items-center space-x-2 w-full mb-6 px-2">
+          <div v-if="!showQueueOverlay && !showLyricsOverlay" class="flex items-center space-x-2 w-full mb-6 px-2">
             <span class="text-xs text-white">{{ formatTime(currentTime) }}</span>
             <input
                 type="range"
@@ -163,7 +236,7 @@
           </div>
 
           <!-- Playback controls -->
-          <div class="flex justify-center items-center space-x-6 mb-6 px-2">
+          <div v-if="!showQueueOverlay && !showLyricsOverlay" class="flex justify-center items-center space-x-6 mb-6 px-2">
             <button
                 @click="onShuffle"
                 :class="playerStore.shuffleActive
@@ -203,23 +276,37 @@
 
           <!-- Queue and voice input -->
           <div class="flex justify-between items-center px-4 mb-4">
-            <button @click="onToggleQueue" class="p-2 rounded hover:scale-110 active:scale-95 transition-transform duration-200">
+            <button @click="toggleQueueOverlay" class="p-2 rounded hover:scale-110 active:scale-95 transition-transform duration-200">
               <QueueListIcon class="w-6 h-6 text-white"/>
             </button>
-            <button @click="onSpeechToText" class="p-2 rounded hover:scale-110 active:scale-95 transition-transform duration-200">
+            <button @click="toggleLyricsOverlay" class="p-2 rounded hover:scale-110 active:scale-95 transition-transform duration-200">
               <MicrophoneIcon class="w-6 h-6 text-white"/>
             </button>
           </div>
-          <QueuePopOver v-if="showQueue" @close="showQueue = false" class="mb-4" />
         </div>
+
+        <!-- Overlays -->
+        <QueueOverlay
+            v-if="showQueueOverlay"
+            :dominant-color="dominantColor"
+            :secondary-color="secondaryColor"
+            @close="showQueueOverlay = false"
+        />
+        <LyricsOverlay
+            v-if="showLyricsOverlay"
+            :dominant-color="dominantColor"
+            :secondary-color="secondaryColor"
+            @close="showLyricsOverlay = false"
+        />
       </div>
     </transition>
   </div>
 </template>
 
 <script setup>
-import QueuePopOver from '@/components/Music/QueuePopOver.vue';
-import { ref, computed, watch } from 'vue';
+import QueueOverlay from '@/components/Music/QueueOverlay.vue';
+import LyricsOverlay from '@/components/Music/LyricsOverlay.vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import { usePlayerStore } from '@/store/player';
 import { useTrackStore } from '@/store/track';
 import { useToast } from 'vue-toastification';
@@ -234,6 +321,7 @@ import {
   MicrophoneIcon,
   QueueListIcon,
   InformationCircleIcon,
+  ChevronDownIcon,
 } from '@heroicons/vue/24/outline';
 
 defineProps({
@@ -249,7 +337,8 @@ const toast = useToast();
 
 // State & refs
 const isFullscreen = ref(false);
-const showQueue = ref(false);
+const showQueueOverlay = ref(false);
+const showLyricsOverlay = ref(false);
 const showInfoTooltip = ref(false);
 const defaultCover = 'https://via.placeholder.com/48';
 const touchStartY = ref(0);
@@ -261,9 +350,12 @@ const secondaryColor = ref([0, 0, 0]);
 const swipeStartX = ref(0);
 const swipeCurrentX = ref(0);
 const swipeOffset = ref(0);
+const incomingOffset = ref(0);
 const isSwipingCover = ref(false);
 const swipeDirection = ref(null);
 const animateDirection = ref(null);
+const nextCoverUrl = ref(null);
+const prevCoverUrl = ref(null);
 
 // Computed props
 const currentTrack = computed(() => playerStore.currentTrack);
@@ -292,30 +384,50 @@ const backgroundStyle = computed(() => {
   };
 });
 
-const currentTrackStyle = computed(() => ({
-  transform: `translateX(${swipeOffset.value}px)`,
-  transition: isSwipingCover.value ? 'none' : 'transform 0.3s ease'
-}));
+const miniPlayerBackground = computed(() => {
+  if (!showQueueOverlay.value && !showLyricsOverlay.value) {
+    return {
+      background: 'rgb(var(--light-surface) / 1)',
+    };
+  }
+  const [r1, g1, b1] = dominantColor.value;
+  const [r2, g2, b2] = secondaryColor.value;
+  return {
+    background: `linear-gradient(to bottom, rgb(${r1}, ${g1}, ${b1}), rgb(${r2}, ${g2}, ${b2}))`,
+  };
+});
 
-const prevTrackStyle = computed(() => ({
-  left: '10px',
-  top: '0',
-  height: '100%',
-  transition: 'opacity 0.3s ease',
-  opacity: prevTrack.value ? 1 : 0
-}));
+const incomingTransform = computed(() => {
+  if (!isSwipingCover.value) return 'translateX(0) scale(1)';
+  if (swipeDirection.value === 'next') {
+    return `translateX(${window.innerWidth + swipeOffset.value}px) scale(0.9)`;
+  } else {
+    return `translateX(${-window.innerWidth + swipeOffset.value}px) scale(0.9)`;
+  }
+});
 
-const nextTrackStyle = computed(() => ({
-  right: '10px',
-  top: '0',
-  height: '100%',
-  transition: 'opacity 0.3s ease',
-  opacity: nextTrack.value ? 1 : 0
-}));
+const incomingOpacity = computed(() => {
+  return isSwipingCover.value ? Math.min(Math.abs(swipeOffset.value) / 200, 0.8) : 0;
+});
+
 
 // Methods
 function toggleFullscreen() {
   isFullscreen.value = !isFullscreen.value;
+  showQueueOverlay.value = false;
+  showLyricsOverlay.value = false;
+}
+
+async function toggleQueueOverlay() {
+  await nextTick();
+  showQueueOverlay.value = !showQueueOverlay.value;
+  showLyricsOverlay.value = false;
+}
+
+async function toggleLyricsOverlay() {
+  await nextTick();
+  showLyricsOverlay.value = !showLyricsOverlay.value;
+  showQueueOverlay.value = false;
 }
 
 async function onToggleLibrary() {
@@ -336,17 +448,41 @@ async function onToggleLibrary() {
 
 function onShuffle() { playerStore.toggleShuffle(); }
 
+function animateSwipe(targetOffset, direction, callback) {
+  const duration = 400;
+  const startTime = performance.now();
+  const initialOffset = swipeOffset.value;
+
+  function step(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easing = progress < 0.5
+        ? 2 * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+    swipeOffset.value = initialOffset + (targetOffset - initialOffset) * easing;
+
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    } else {
+      callback();
+      swipeOffset.value = 0;
+      nextCoverUrl.value = null;
+      prevCoverUrl.value = null;
+      isSwipingCover.value = false;
+    }
+  }
+
+  requestAnimationFrame(step);
+}
+
 function onPrev() {
   if (!prevTrack.value) return;
   animateDirection.value = 'prev';
-  swipeOffset.value = 150; // Start animation
-  setTimeout(() => {
+  prevCoverUrl.value = prevTrack.value.coverUrl || defaultCover;
+  animateSwipe(window.innerWidth, 'prev', () => {
     playerStore.prevTrack();
-    swipeOffset.value = 0;
-    setTimeout(() => {
-      animateDirection.value = null;
-    }, 300);
-  }, 10);
+  });
 }
 
 function onTogglePlay() { playerStore.isPlaying ? playerStore.pause() : playerStore.play(); }
@@ -354,57 +490,52 @@ function onTogglePlay() { playerStore.isPlaying ? playerStore.pause() : playerSt
 function onNext() {
   if (!nextTrack.value) return;
   animateDirection.value = 'next';
-  swipeOffset.value = -150; // Start animation
-  setTimeout(() => {
+  nextCoverUrl.value = nextTrack.value.coverUrl || defaultCover;
+  animateSwipe(-window.innerWidth, 'next', () => {
     playerStore.nextTrack();
-    swipeOffset.value = 0;
-    setTimeout(() => {
-      animateDirection.value = null;
-    }, 300);
-  }, 10);
+  });
 }
 
 function onToggleLoop() { playerStore.toggleLoopMode(); }
-function onToggleQueue() { showQueue.value = !showQueue.value; }
-function onSpeechToText() { /* TODO */ }
 function onSeek() { playerStore.seek(currentTime.value); }
-function formatTime(sec = 0) {
-  const m = String(Math.floor(sec/60)).padStart(2,'0');
-  const s = String(Math.floor(sec%60)).padStart(2,'0');
+function formatTime(seconds = 0) {
+  const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+  const s = String(Math.floor(seconds % 60)).padStart(2, '0');
   return `${m}:${s}`;
 }
 
 // Touch handling for fullscreen view
 function onTouchStart(e) {
+  if (showQueueOverlay.value || showLyricsOverlay.value) return;
   touchStartY.value = e.touches[0].clientY;
   touchCurrentY.value = touchStartY.value;
   isSwiping.value = true;
 }
 
 function onTouchMove(e) {
-  if (!isSwiping.value) return;
+  if (!isSwiping.value || showQueueOverlay.value || showLyricsOverlay.value) return;
   touchCurrentY.value = e.touches[0].clientY;
   const deltaY = touchCurrentY.value - touchStartY.value;
   if (deltaY > 0) {
     e.currentTarget.style.transform = `translateY(${deltaY}px)`;
-    e.currentTarget.style.opacity = 1 - Math.min(deltaY/300,1);
+    e.currentTarget.style.opacity = 1 - Math.min(deltaY / 300, 1);
   }
 }
 
-function onTouchEnd() {
-  if (!isSwiping.value) return;
+function onTouchEnd(e) {
+  if (!isSwiping.value || showQueueOverlay.value || showLyricsOverlay.value) return;
   const deltaY = touchCurrentY.value - touchStartY.value;
-  if (deltaY > 150) isFullscreen.value = false;
-  isSwiping.value = false;
-  if (coverImage.value?.parentElement) {
-    coverImage.value.parentElement.style.transform = '';
-    coverImage.value.parentElement.style.opacity = '';
+  if (deltaY > 100) {
+    isFullscreen.value = false;
   }
+  isSwiping.value = false;
+  e.currentTarget.style.transform = '';
+  e.currentTarget.style.opacity = '';
 }
 
 // Swipe handling for track covers
 function startSwipe(e) {
-  if (!prevTrack.value && !nextTrack.value) return;
+  if ((!prevTrack.value && !nextTrack.value) || showQueueOverlay.value || showLyricsOverlay.value) return;
   swipeStartX.value = e.touches[0].clientX;
   swipeCurrentX.value = swipeStartX.value;
   isSwipingCover.value = true;
@@ -416,40 +547,48 @@ function moveSwipe(e) {
   swipeCurrentX.value = e.touches[0].clientX;
   swipeOffset.value = swipeCurrentX.value - swipeStartX.value;
 
-  // Limit maximum swipe offset
-  const maxOffset = 150;
-  if (Math.abs(swipeOffset.value) > maxOffset) {
-    swipeOffset.value = swipeOffset.value > 0 ? maxOffset : -maxOffset;
-  }
-
+  // Определяем направление свайпа
   swipeDirection.value = swipeOffset.value > 0 ? 'prev' : 'next';
+
+  // Подготавливаем следующую обложку
+  if (swipeDirection.value === 'next' && nextTrack.value) {
+    nextCoverUrl.value = nextTrack.value.coverUrl || defaultCover;
+  } else if (swipeDirection.value === 'prev' && prevTrack.value) {
+    prevCoverUrl.value = prevTrack.value.coverUrl || defaultCover;
+  }
 }
 
 function endSwipe() {
   if (!isSwipingCover.value) return;
 
-  const threshold = 80;
+  const threshold = window.innerWidth / 5;
   const absOffset = Math.abs(swipeOffset.value);
 
   if (absOffset > threshold) {
     if (swipeDirection.value === 'prev' && prevTrack.value) {
-      animateDirection.value = 'prev';
-      playerStore.prevTrack();
+      animateSwipe(window.innerWidth, 'prev', () => {
+        playerStore.prevTrack();
+      });
     } else if (swipeDirection.value === 'next' && nextTrack.value) {
-      animateDirection.value = 'next';
-      playerStore.nextTrack();
+      animateSwipe(-window.innerWidth, 'next', () => {
+        playerStore.nextTrack();
+      });
+    } else {
+      // Возвращаем на место, если трека нет
+      animateSwipe(0, null, () => {
+        swipeOffset.value = 0;
+        nextCoverUrl.value = null;
+        prevCoverUrl.value = null;
+      });
     }
+  } else {
+    // Возвращаем на место, если свайп недостаточно сильный
+    animateSwipe(0, null, () => {
+      swipeOffset.value = 0;
+      nextCoverUrl.value = null;
+      prevCoverUrl.value = null;
+    });
   }
-
-  // Reset swipe state
-  swipeOffset.value = 0;
-  isSwipingCover.value = false;
-  swipeDirection.value = null;
-
-  // Reset animation direction
-  setTimeout(() => {
-    animateDirection.value = null;
-  }, 300);
 }
 
 function updateBackgroundColor() {
@@ -546,14 +685,35 @@ input[type="range"]::-moz-range-progress {
   opacity: 0;
 }
 
+.track-enter-active,
+.track-leave-active {
+  transition: all 0.3s ease;
+}
+
+.track-enter-from {
+  transform: translateX(100%) scale(0.9);
+  opacity: 0;
+}
+
+.track-leave-to {
+  transform: translateX(-100%) scale(0.9);
+  opacity: 0;
+}
+
+/* Эффект глубины для обложек */
+.track-cover {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* Плавное появление/исчезание */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: opacity 0.3s ease;
 }
 
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-  transform: translateY(2px);
 }
 </style>

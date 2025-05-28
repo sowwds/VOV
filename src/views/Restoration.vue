@@ -33,12 +33,18 @@ const goToPreviousStep = () => {
 </script>
 
 <template>
-  <div class="relative h-full">
+  <div class="flex flex-col h-full">
+    <!-- даём снизу отступ = высоте индикатора (например, 4rem = 16) -->
+    <div class="flex-1 overflow-auto pb-16">
       <component
-        :is="currentComponent"
-        :go-to-previous-step="goToPreviousStep"
-        :show-back-button="restorationStore.currentStep > 1"
+          :is="currentComponent"
+          :go-to-previous-step="goToPreviousStep"
+          :show-back-button="restorationStore.currentStep > 1"
       />
-    <StepIndicator class="absolute bottom-0 w-full" />
+    </div>
+
+    <StepIndicator class="w-full h-16" />
   </div>
 </template>
+
+
