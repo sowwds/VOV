@@ -14,7 +14,7 @@ const isActive = (step) => restorationStore.currentStep === step.number;
 </script>
 
 <template>
-  <div class="fixed bottom-20 justify-around rounded right-0">
+  <div class="fixed bottom-16 md:bottom-20 justify-around rounded right-0">
     <div class="flex justify-around items-center p-2">
       <div
         v-for="(step, index) in steps"

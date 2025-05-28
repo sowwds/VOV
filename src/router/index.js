@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/auth';
 // Layouts
 import MainLayout from '@/components/Layout/MainLayout.vue';
 import BlankLayout from '@/components/Layout/BlankLayout.vue';
+import BannedLayout from "@/components/Layout/BannedLayout.vue";
 
 // Pages
 import Home from '@/views/Home.vue';
@@ -11,7 +12,8 @@ import Restoration from '@/views/Restoration.vue';
 import Collection from '@/views/Collection.vue';
 import Library from '@/views/Library.vue';
 import Login from '@/views/Login.vue';
-import Callback from '@/views/Callback.vue';
+import Callback from "@/views/Callback.vue";
+import BannedPage from "@/views/Banned.vue";
 
 const routes = [
   {
@@ -38,6 +40,13 @@ const routes = [
       { path: '', name: 'Callback', component: Callback },
     ],
   },
+  {
+    path: '/banned',
+    component: BannedLayout,
+    children: [
+        { path: '', name: 'Banned', component: BannedPage },
+    ]
+  }
 ];
 
 const router = createRouter({

@@ -29,7 +29,7 @@
 
       <!-- Page content -->
       <main
-          class="flex-1 px-8 md:px-12 lg:px-16 pb-6 pt-15"
+          class="flex-1 px-8 md:px-12 lg:px-16"
           @click="closeSidebarOnMobile"
       >
         <router-view />
