@@ -1,8 +1,9 @@
+```vue
 <template>
   <div
       v-if="isVisible"
       class="fixed bottom-0 left-0 right-0 z-60 rounded-t-lg shadow-lg overlay-enter flex flex-col"
-      :style="{ top: '80px', height: 'calc(100vh - 80px)', background: backgroundStyle.background }"
+      :style="{ top: '57px', height: 'calc(100vh - 57px)', background: backgroundStyle.background }"
   >
     <!-- Header with swipe handle -->
     <div
@@ -76,6 +77,7 @@
                 }"
                 @touchstart="startTrackSelection($event, track.trackId)"
                 @touchend="endTrackSelection"
+                @click="handleTrackClick(track)"
             >
               <span class="w-5 text-xs text-gray-300 mr-1">{{ idx + 1 }}</span>
               <img
@@ -126,6 +128,7 @@
                 }"
                 @touchstart="startTrackSelection($event, track.trackId)"
                 @touchend="endTrackSelection"
+                @click="handleTrackClick(track)"
             >
               <span class="w-5 text-xs text-gray-300 mr-1">{{ idx + 1 }}</span>
               <img
@@ -137,12 +140,7 @@
                 <p class="text-sm text-white truncate">{{ track.title || 'Неизвестный трек' }}</p>
                 <p class="text-xs text-gray-300 truncate">{{ track.author || 'Неизвестный автор' }}</p>
               </div>
-              <button
-                  @click.stop="handlePlayClick(track)"
-                  class="text-white hover:scale-110 active:scale-95 transition-transform duration-200"
-              >
-                <component :is="isCurrentPlaying(track) ? PauseIcon : PlayIcon" class="h-5 w-5"/>
-              </button>
+              <Bars3Icon class="h-5 w-5 stroke-white"/>
             </li>
           </template>
         </draggable>
@@ -170,7 +168,7 @@
 import { computed, defineProps, ref } from 'vue';
 import { usePlayerStore } from '@/store/player';
 import { useTrackStore } from '@/store/track';
-import { PlayIcon, PauseIcon, ChevronDownIcon } from '@heroicons/vue/24/outline';
+import { PlayIcon, PauseIcon, ChevronDownIcon, Bars3Icon } from '@heroicons/vue/24/outline';
 import { trackService } from '@/services/trackService';
 import draggable from 'vuedraggable';
 
@@ -251,6 +249,13 @@ function onDragStart() {
 function onDragEnd() {
   isDragging.value = false;
   selectedTrackId.value = null;
+}
+
+// Handle track click
+function handleTrackClick(track) {
+  if (isDragging.value || selectedTrackId.value) return; // Игнорируем клик, если идет перетаскивание или долгое нажатие
+  if (!track || !track.trackId) return;
+  handlePlayClick(track);
 }
 
 // Background style
@@ -426,3 +431,4 @@ function clearAll() {
   border-radius: 4px;
 }
 </style>
+```

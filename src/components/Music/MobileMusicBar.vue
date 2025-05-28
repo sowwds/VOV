@@ -29,7 +29,7 @@
     <transition name="slide-up">
       <div
           v-if="isFullscreen"
-          class="fixed inset-0 z-50 flex flex-col pt-16 px-4"
+          class="fixed inset-0 z-150 flex flex-col pt-16 px-4"
           :style="backgroundStyle"
           @touchstart="onTouchStart"
           @touchmove="onTouchMove"
