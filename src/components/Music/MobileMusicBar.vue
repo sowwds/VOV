@@ -292,7 +292,7 @@
             :secondary-color="secondaryColor"
             @close="showQueueOverlay = false"
         />
-        <LyricsOverlay
+        <MobileLyricsOverlay
             v-if="showLyricsOverlay"
             :dominant-color="dominantColor"
             :secondary-color="secondaryColor"
@@ -305,7 +305,7 @@
 
 <script setup>
 import QueueOverlay from '@/components/Music/QueueOverlay.vue';
-import LyricsOverlay from '@/components/Music/LyricsOverlay.vue';
+import MobileLyricsOverlay from '@/components/Music/MobileLyricsOverlay.vue';
 import { ref, computed, watch, nextTick } from 'vue';
 import { usePlayerStore } from '@/store/player';
 import { useTrackStore } from '@/store/track';

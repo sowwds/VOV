@@ -17,6 +17,15 @@ function normalize(raw) {
 }
 
 export const trackService = {
+
+
+  timeToSeconds(time) {
+    const [minutes, seconds] = time.split(':').slice(1).map(Number);
+    return minutes * 60 + seconds;
+  },
+
+
+
   // Получение топовых треков по прослушиваниям
   async getTopPlays(limit = 10) {
     const { data } = await api.get('/public-library/top-plays', { params: { limit } });
@@ -99,6 +108,21 @@ export const trackService = {
     }));
   },
 
+  async getTrackLyrics(trackId) {
+    try {
+      const { data } = await api.post('/restoration/lyrics', { trackId });
+      const lyrics = JSON.parse(data.lyrics);
+      return lyrics.map((line) => ({
+        text: line.text,
+        start: this.timeToSeconds(line.start),
+        end: this.timeToSeconds(line.end),
+      }));
+    } catch (error) {
+      console.error('Ошибка при получении текста песни:', error);
+      return [];
+    }
+  },
+
   // Добавление трека в коллекцию
   async addToLibrary(userId, trackId) {
     const { data } = await api.post('/users/library', { userId, trackId });
@@ -140,6 +164,7 @@ export const trackService = {
     const baseURL = api.defaults.baseURL || 'http://localhost:5000';
     return `${baseURL}/restoration/stream/${trackId}?version=${version}`;
   },
+
 
   // Получение URL для скачивания трека
   async getDownloadUrl(trackId, version = 'processed') {
