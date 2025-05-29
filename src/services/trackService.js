@@ -17,6 +17,7 @@ function normalize(raw) {
 }
 
 export const trackService = {
+  // Получение топовых треков по прослушиваниям
   async getTopPlays(limit = 10) {
     const { data } = await api.get('/public-library/top-plays', { params: { limit } });
     return data.tracks.map(track => normalize({
@@ -25,6 +26,7 @@ export const trackService = {
     }));
   },
 
+  // Получение топовых треков по лайкам
   async getTopLikes(limit = 10) {
     const { data } = await api.get('/public-library/top-likes', { params: { limit } });
     return data.tracks.map(track => normalize({
@@ -33,6 +35,7 @@ export const trackService = {
     }));
   },
 
+  // Получение новых треков
   async getNewTracks(limit = 10) {
     const { data } = await api.get('/public-library', { params: { limit } });
     return data.tracks.map(track => normalize({
@@ -41,6 +44,16 @@ export const trackService = {
     }));
   },
 
+  // Получение новых треков по тегам
+  async getNewTracksByTags(tags, limit = 10) {
+    const { data } = await api.post('/public-library/tags', { tags, limit });
+    return data.tracks.map(track => normalize({
+      ...track,
+      streamUrl: this.getStreamUrl(track.trackid),
+    }));
+  },
+
+  // Поиск треков
   async searchTracks(query, userId, from = 0, size = 10, sort = '') {
     if (!query.trim()) return { tracks: [], total: 0, from: 0, size };
     const params = {
@@ -67,6 +80,7 @@ export const trackService = {
     };
   },
 
+  // Получение коллекции пользователя
   async getUserLibrary(userId) {
     const { data } = await api.post('/users/library/list', { userId });
     return data.tracks.map(track => normalize({
@@ -75,11 +89,23 @@ export const trackService = {
     }));
   },
 
+  // Получение коллекции пользователя по тегам
+  async getUserLibraryByTags(userId, tags) {
+    const { data } = await api.post('/users/tags', { userId, tags });
+
+    return data.tracks.map(track => normalize({
+      ...track,
+      streamUrl: this.getStreamUrl(track.trackid),
+    }));
+  },
+
+  // Добавление трека в коллекцию
   async addToLibrary(userId, trackId) {
     const { data } = await api.post('/users/library', { userId, trackId });
     return data;
   },
 
+  // Удаление трека из коллекции
   async removeFromLibrary(userId, trackId) {
     const { data } = await api.delete('/users/library', {
       data: { userId, trackId },
@@ -87,11 +113,12 @@ export const trackService = {
     return data;
   },
 
+  // Жалоба на трек
   async reportTrack(userId, trackId) {
     try {
       const response = await api.post('/public-library/complaints', {
-        userId: String(userId), // Преобразуем userId в строку
-        trackId, // trackId уже строка (UUID)
+        userId: String(userId),
+        trackId,
       });
       console.log('Report track success:', response.data);
       return response.data;
@@ -101,23 +128,26 @@ export const trackService = {
     }
   },
 
+  // Получение метаданных трека
   async getTrackMetadata(trackId) {
     const { data } = await api.get(`/public-library/${trackId}`);
     console.log(data);
     return data;
   },
 
+  // Получение URL для стриминга трека
   getStreamUrl(trackId, version = 'processed') {
-    // Используем baseURL из api
-    const baseURL = api.defaults.baseURL || 'http://localhost:5000'; // Фолбэк на случай, если baseURL не задан
+    const baseURL = api.defaults.baseURL || 'http://localhost:5000';
     return `${baseURL}/restoration/stream/${trackId}?version=${version}`;
   },
 
+  // Получение URL для скачивания трека
   async getDownloadUrl(trackId, version = 'processed') {
     const { data } = await api.get(`/restoration/download/${trackId}`, { params: { version } });
     return data.url;
   },
 
+  // Загрузка трека
   async uploadTrack(userId, file) {
     const formData = new FormData();
     formData.append('userId', userId);
@@ -128,6 +158,7 @@ export const trackService = {
     return data.id;
   },
 
+  // Сохранение метаданных трека
   async saveMetadata(trackId, metadata) {
     const { data } = await api.post('/restoration/metadata', { trackId, ...metadata });
     return data.metadataId;
