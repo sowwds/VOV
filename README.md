@@ -15,8 +15,8 @@ https://github.com/user-attachments/assets/fc364ca9-1aef-4870-aeff-cef28b7db1bb
 ### 📚 Библиотека всех треков сайта
 Можно смотреть популярные, новые, а также искать нужные с `ElasticSearch`
 
-<img height="420" alt="image" src="https://github.com/user-attachments/assets/c7bfca01-3076-4e2a-89f5-16051089e32e" />
-<img height="420" alt="image" src="https://github.com/user-attachments/assets/0d078ebe-a9da-415d-8143-5e52bb5a55c0" />
+<img height="300" alt="image" src="https://github.com/user-attachments/assets/c7bfca01-3076-4e2a-89f5-16051089e32e" />
+<img height="300" alt="image" src="https://github.com/user-attachments/assets/0d078ebe-a9da-415d-8143-5e52bb5a55c0" />
 
 ### 💜 Личная коллекция
 
