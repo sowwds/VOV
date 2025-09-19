@@ -40,4 +40,16 @@ https://github.com/user-attachments/assets/fc364ca9-1aef-4870-aeff-cef28b7db1bb
 
 https://github.com/user-attachments/assets/30de08cb-1dda-481b-b9e8-3f45cee77f90
 
+<h1 align="center">Установка и запуск</h1>
 
+### 1. Установка зависимостей
+```
+npm install
+```
+### 2. jsmediatags
+в `node_modules/jsmediatags/package.json` в поле `"browser"` заменить `"dist/jsmediatags.js"`, на `"dist/jsmediatags.min.js"`
+
+### 3. Запуск
+```
+npm run dev
+```
